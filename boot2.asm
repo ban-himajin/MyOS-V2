@@ -19,10 +19,10 @@ VGA:
     dd 0xb8000
 
 corsor_Y:
-    dw 0x00
+    dd 0x00
 
 corsor_X:
-    dw 0x00
+    dd 0x00
 
 back_color:
     db 0x00
@@ -35,6 +35,9 @@ color:
 
 color_red:
     db 0x0c
+
+color_blue:
+    db 0x01
 
 
 [BITS 16]
@@ -92,6 +95,7 @@ print:;printの初めの部分
 
 
 load_corsor_16bit:
+    cmp al, 10
     mov ah, 0x03
     mov bh, 0x00
     int 0x10
@@ -181,18 +185,23 @@ section .data;32bit専用データセクション
 start_msg_32bit:
     db "Start 32bit Mode!",0
 
-
 ;seciton .bss
 
 section .text
-
-setup_32bit:;32bitスタート時に初期化するものを入れる関数
+start_setup_32bit:;32bitに入ったら初期化するものを入れるまた初期化に使う関数でも可
+    call setup_corsor_32bit
+    ;call load_corsor_32bit
+    call load_corsor_32bit
+    ret
+setup_color_32bit:;背景とテキストカラーをVGAで扱える形に直す関数
     mov al, [back_color]
     shl al, 4
     mov bl, [text_color]
     or al, bl
     mov byte [color], al
-    
+    ret
+
+setup_corsor_32bit:;VGAの初期位置を決める
     mov eax, [corsor_Y]
     inc eax
     imul eax, 80
@@ -205,38 +214,26 @@ setup_32bit:;32bitスタート時に初期化するものを入れる関数
 load_corsor_32bit:
     cmp al, 10
     pusha
-    mov dx, 0x3d4
-    mov al, 0x0f
-    out dx, al
-    inc dx
-    in al, dx
-    mov dl ,al
-
-    dec dx
-    mov al, 0x0e
-    out dx, al
-    inc dx
-    in al, dx
-    mov bh, al
-    
-    ;カーソルの上位バイトと下位バイトをx,yに分解
-    mov ax, bx
-    mov cx, 80
-    xor dx, dx
-    div cx
+    mov eax, [corsor_Y]
+    mov ebx, [corsor_X]
     je .load_corsor_false
     jmp .load_corsor_end
 .load_corsor_false:
-    inc ax
-    mov dx, 0
+    inc eax
+    mov ebx, 0
 .load_corsor_end:
-    mov word[corsor_Y], ax
-    mov word[corsor_X], dx
-    pop ax
+    mov dword[corsor_Y], eax
+    mov dword[corsor_X], ebx
+    imul eax, 80
+    add eax, ebx
+    imul eax, 2
+    add eax, 0xb8000
+    mov dword[VGA], eax
+    popa
     ret
 
 clean_screen:;画面をすべて消す関数1
-    mov edi, VGA
+    mov edi, 0xb8000    ;VGAメモリを直接入力
     mov ecx, 80 * 25
     mov ax, [back_color]
     jmp .loop
@@ -244,9 +241,17 @@ clean_screen:;画面をすべて消す関数1
     mov [edi], ax
     add edi, 2
     loop .loop
+    mov dword[corsor_X], 0
+    mov dword[corsor_Y], 0
+    call load_corsor_32bit
     ret
 
-print_32bit:;文字を出力する関数
+print_32bit:
+    mov edi, [VGA]
+    call setup_color_32bit
+    jmp .print_loop_32bit
+
+.print_loop_32bit:;文字を出力する関数
     lodsb
     cmp al, 0
     je .done
@@ -257,7 +262,7 @@ print_32bit:;文字を出力する関数
     mov ah, [color]
     mov [edi], ax
     add edi, 2
-    jmp print_32bit
+    jmp .print_loop_32bit
 .done:
     mov byte [color], 0x07
     call load_corsor_32bit
@@ -268,25 +273,16 @@ print_32bit:;文字を出力する関数
 
 start_print_32bit:
     mov esi, start_msg_32bit
-    mov ah, [color_red]
-    mov byte[color], ah
-    mov edi, [VGA]
+    mov al, 0x07
+    mov byte[text_color], al
     call print_32bit
     ret
 
 start_32bit:
-    call setup_32bit
+    call start_setup_32bit
     ;call clean_screen
-    mov al, 'A'        ; 表示する文字
-    mov ah, 0x1F       ; 属性（白文字・青背景）
-
-    ; AX = 文字＋属性（2バイト）
-    mov eax, 0xB8000   ; VGAテキストモードの開始アドレス
-    mov [eax], ax      ; 画面左上に表示
-
     call start_print_32bit
     
     cli
-
 
     jmp $
