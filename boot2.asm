@@ -5,6 +5,8 @@
 ;オフセット
 ;LoadPlace1 * 16 + LoadPlace2が配置場所
 
+;%define SECONDBOOTSIZE 
+
 %define KERNEL_SIZE 1
 
 %define KERNEL_COPY_PLACE 0x100000
@@ -42,17 +44,18 @@ color_blue:
 
 [BITS 16]
 [org 0x8000]
+;[org 0x100000]
 
 section .data;16bit専用データセクション
 
 Second_Start_msg:
-    db "Start Second Boot",10 ,0
-
-load_error:
-    db "|Kernel no found|",10 0
+    db "Start Second Boot", 10, 0
 
 result_load_msg:
     db "kernel found", 10, 0
+
+load_error:
+    db "|Kernel no found|", 10, 0
 
 ;32bitGDTの設定
 gdt32bit_start:
@@ -94,6 +97,7 @@ print:;printの初めの部分
     je .done_print
     cmp al, 10
     je .line_break_16bit
+    jne .print_next
 .print_next:
     mov ah, 0x0e
     mov bh, 0x00
@@ -133,10 +137,13 @@ load_corsor_16bit:
 start:
     cli
     xor ax, ax
+    ;xor ax, 0x1000
     mov ds, ax
     mov es, ax
+
     mov ss, ax
     mov sp, 0x9000
+    ;mov sp, 0xFFF0
     ;スタックの開始位置
     sti
 
@@ -168,6 +175,7 @@ load_kernel:
     mov al, KERNEL_SIZE
     ;カーネルのサイズ数
     mov ch, 0
+    mov cl, 2
     mov dl, 0x80
     int 0x13
     ;jc load_kernel_error
@@ -188,14 +196,15 @@ result_load_print:
 setup_protect_mode:
     call load_corsor_16bit
     cli
+    ;jmp $
     lgdt [gdt32bit_descriptor]
 
     mov eax, cr0
     or eax, 0x01
     ;jmp $;テスト用
     mov cr0, eax
-    align 1024
-    jmp $
+    ;sti
+    ;jmp $
     jmp 0x08:start_32bit
 
 [BITS 32]
@@ -219,14 +228,16 @@ setup_protect_mode:
 section .data;32bit専用データセクション
 
 start_msg_32bit:
-    db 10, "Start 32bit Mode!",10 ,0
+    db 10, "Start 32bit Mode!", 10, 0
 
 ;GDTの作成
 gdt64bit_start:
-    dd 0x0000
-    dd 0x0000
-    dd 0x0000
-    dd 0x0000
+    dw 0x0000
+    dw 0x0000
+    dd 0x00
+    dd 0x00
+    dd 0x00
+    dd 0x00
 
     dw 0x0000
     dw 0x0000
@@ -249,13 +260,15 @@ gdt64bit_descriptor:
 
 ;IDTの作成
 idt:
-    times 256 * 6 db 0
+    ;times 256 * 6 db 0
+    times 256 * 8 db 0
 idt_ptr:
     dw 256 * 8 - 1
     dd idt
 
 ;ページングテーブルの定義
 %define PAGE_FLAGS 0x03
+
 align 4096
 pml4_table_32bit:
     dq pdpt_table_32bit + PAGE_FLAGS
@@ -275,6 +288,8 @@ align 4096
 pt_table_32bit:
     dq 0x00000000 | PAGE_FLAGS
     times 511 dq 0
+
+
 ;seciton .bss
 
 section .text
@@ -397,6 +412,9 @@ start_32bit:
     call start_setup_32bit
     ;call clean_screen
     call start_print_32bit
+    ;jmp $
+    lgdt[gdt64bit_descriptor]
+    jmp $
     call paging_32bit
     ;sti
     jmp $
@@ -408,6 +426,8 @@ paging_32bit:
     mov cr4, eax
 
     mov eax, pml4_table_32bit
+    ;mov eax, 0x10000
+    ;mov eax, page_directory
     mov cr3, eax
 
     mov ecx, 0xc0000080
@@ -422,19 +442,38 @@ paging_32bit:
     popa
     ret
 
+
 idt_setup_32bit:
     set_idt_entry_32bit 0, isr0_32bit, 0x08
-    set_idt_entry_32bit 3, bp_32bit, 0x08
+    set_idt_entry_32bit 1, db_32bit, 0x08
+    set_idt_entry_32bit 2, nmi_32bit, 0x08
+    set_idt_entry_32bit 3, db_32bit, 0x08
+    set_idt_entry_32bit 4, of_32bit, 0x08
+    set_idt_entry_32bit 5, br_32bit, 0x08
     set_idt_entry_32bit 6, ud_32bit, 0x08
+    set_idt_entry_32bit 7, nm_32bit, 0x08
     set_idt_entry_32bit 8, df_32bit, 0x08
+    set_idt_entry_32bit 9, r9_32bit, 0x08
+    set_idt_entry_32bit 10, ts_32bit, 0x08
+    set_idt_entry_32bit 11, np_32bit, 0x08
+    set_idt_entry_32bit 12, ss_32bit, 0x08
     set_idt_entry_32bit 13, gp_32bit, 0x08
     set_idt_entry_32bit 14, pf_32bit, 0x08
+    set_idt_entry_32bit 15, r15_32bit, 0x08
+    set_idt_entry_32bit 16, mf_32bit, 0x08
+    set_idt_entry_32bit 17, ac_32bit, 0x08
+    set_idt_entry_32bit 18, mc_32bit, 0x08
+    set_idt_entry_32bit 19, xf_32bit, 0x08
+    set_idt_entry_32bit 20, ve_32bit, 0x08
+    set_idt_entry_32bit 21, r21_29_32bit, 0x08
+    set_idt_entry_32bit 30, sx_32bit, 0x08
+    set_idt_entry_32bit 31, r31_32bit, 0x08
     lidt [idt_ptr]
     ret
 
 ;ここから下が例外ハンドラの処理をする関数
-isr0_msg_32bit:
-    db "de 0",32 ,0
+isr0_msg_32bit:;0
+    db "de Ecode=0",32 ,0
 
 isr0_32bit:
     cli
@@ -446,8 +485,67 @@ isr0_32bit:
     hlt
     ;iret
 
-ud_msg_32bit:
-    db "ud 6",32 ,0
+db_msg_32bit:;1
+    db "db Ecode=1",32 ,0
+
+db_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,db_msg_32bit
+    popad
+    hlt
+    ;iret
+
+nmi_msg_32bit:;2
+    db "nmi Ecode=2",32 ,0
+
+nmi_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,nmi_msg_32bit
+    popad
+    hlt
+    ;iret
+bp_msg_32bit:;3
+    db "bp Ecode=3",32 ,0
+
+bp_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,bp_msg_32bit
+    popad
+    hlt
+    ;iret
+
+of_msg_32bit:;4
+    db "of Ecode=4",32 ,0
+
+of_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,of_msg_32bit
+    popad
+    hlt
+    ;iret
+
+br_msg_32bit:;5
+    db "br Ecode=5",32 ,0
+
+br_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,br_msg_32bit
+    popad
+    hlt
+    ;iret
+
+ud_msg_32bit:;6
+    db "ud Ecode=6",32 ,0
 
 ud_32bit:
     cli
@@ -458,8 +556,79 @@ ud_32bit:
     hlt
     ;iret
 
-gp_msg_32bit:
-    db "gp 13",32 ,0
+nm_msg_32bit:;7
+    db "nm Ecode=7",32 ,0
+
+nm_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,nm_msg_32bit
+    popad
+    hlt
+    ;iret
+
+df_msg_32bit:;8
+    db "df Ecode=8",32 ,0
+
+df_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,df_msg_32bit
+    popad
+    hlt
+    ;iret
+
+r9_msg_32bit:;9
+    db "r9(-) Ecode=9",32 ,0
+
+r9_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,r9_msg_32bit
+    popad
+    hlt
+    ;iret
+
+ts_msg_32bit:;10
+    db "ts Ecode=10",32 ,0
+
+ts_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,ts_msg_32bit
+    popad
+    hlt
+    ;iret
+
+np_msg_32bit:;11
+    db "np Ecode=11",32 ,0
+
+np_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,np_msg_32bit
+    popad
+    hlt
+    ;iret
+
+ss_msg_32bit:;12
+    db "ss Ecode=12",32 ,0
+
+ss_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,ss_msg_32bit
+    popad
+    hlt
+    ;iret
+gp_msg_32bit:;13
+    db "gp Ecode=13",32 ,0
 
 gp_32bit:
     cli
@@ -470,10 +639,10 @@ gp_32bit:
     hlt
     ;iret
 
-pf_msg_32bit:
-    db "pf 14",32 ,0
+pf_msg_32bit:;14
+    db "pf Ecode=14",32 ,0
 
-pf_32bit:
+pf_32bit:;
     cli
     pushad
     call error_color
@@ -482,28 +651,111 @@ pf_32bit:
     hlt
     ;iret
 
-df_msg_32bit:
-    db "df 8",32 ,0
+r15_msg_32bit:;15
+    db "r15(-) Ecode=15",32 ,0
 
-df_32bit:
+r15_32bit:
     cli
     pushad
     call error_color
-    mov esi, df_msg_32bit
+    mov si,r15_msg_32bit
     popad
     hlt
     ;iret
 
-bp_msg_32bit:
-    db "bp 3",32 ,0
+mf_msg_32bit:;16
+    db "mf Ecode=16",32 ,0
 
-bp_32bit:
+mf_32bit:
     cli
     pushad
     call error_color
-    mov esi, bp_msg_32bit
+    mov si,mf_msg_32bit
     popad
     hlt
     ;iret
 
+ac_msg_32bit:;17
+    db "ac Ecode=17",32 ,0
+
+ac_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,ac_msg_32bit
+    popad
+    hlt
+    ;iret
+
+mc_msg_32bit:;18
+    db "mc Ecode=18",32 ,0
+
+mc_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,mc_msg_32bit
+    popad
+    hlt
+    ;iret
+
+xf_msg_32bit:;19
+    db "xf Ecode=19",32 ,0
+
+xf_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,xf_msg_32bit
+    popad
+    hlt
+    ;iret
+
+ve_msg_32bit:;20
+    db "ve Ecode=20",32 ,0
+
+ve_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,ve_msg_32bit
+    popad
+    hlt
+    ;iret
+
+r21_29_msg_32bit:;21-29
+    db "r21-29(-)br Ecode=21-29",32 ,0
+
+r21_29_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,r21_29_msg_32bit
+    popad
+    hlt
+    ;iret
+
+sx_msg_32bit:;30
+    db "sx Ecode=30",32 ,0
+
+sx_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,sx_msg_32bit
+    popad
+    hlt
+    ;iret
+
+r31_msg_32bit:;31
+    db "r31(-) Ecode=31",32 ,0
+
+r31_32bit:
+    cli
+    pushad
+    call error_color
+    mov si,r31_msg_32bit
+    popad
+    hlt
+    ;iret
 ;---------------------------------

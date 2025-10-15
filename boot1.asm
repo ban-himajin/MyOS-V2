@@ -2,7 +2,7 @@
 [org 0x7c00]
 
 ;----------定数作成スペース---------
-%define SECONDSIZE 2
+%define SECONDSIZE 48
 
 %define VGA 0xb8000
 
@@ -168,7 +168,6 @@ error_print_vga:
 load_second:
     mov bx, 0x8000
     xor ax, ax
-    mov ds, ax
     mov es, ax
 
     ;ファイルの読み込み
@@ -183,6 +182,7 @@ load_second:
     jc error_print
 
     jmp 0x0000:0x8000
+    ;jmp 0x0000:0xFFFFF
 
 times 510-($-$$) db 0
 dw 0xaa55
