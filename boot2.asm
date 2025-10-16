@@ -286,9 +286,13 @@ pd_table_32bit:
 
 align 4096
 pt_table_32bit:
-    dq 0x00000000 | PAGE_FLAGS
-    times 511 dq 0
-
+;    dq 0x00000000 | PAGE_FLAGS
+;    times 512 - 1 dq 0
+    %assign i 0
+    %rep 512
+        dq (i << 12) | PAGE_FLAGS  ; 各4KBページをマッピング
+    %assign i i+1
+    %endrep
 
 ;seciton .bss
 
@@ -414,20 +418,22 @@ start_32bit:
     call start_print_32bit
     ;jmp $
     lgdt[gdt64bit_descriptor]
-    jmp $
+    ;jmp $
     call paging_32bit
     ;sti
+    ;jmp $
+    mov al, 'f'
+    mov [0xB810a], al  ; VGAに文字表示
     jmp $
+    jmp 0x08:start_64bit
 
 paging_32bit:
-    pusha
+    ;pusha
     mov eax, cr4
     or eax, 1 << 5
     mov cr4, eax
 
     mov eax, pml4_table_32bit
-    ;mov eax, 0x10000
-    ;mov eax, page_directory
     mov cr3, eax
 
     mov ecx, 0xc0000080
@@ -439,7 +445,8 @@ paging_32bit:
     or eax, 1 << 31
     mov cr0, eax
 
-    popa
+    ;jmp $
+    ;popa
     ret
 
 
@@ -759,3 +766,15 @@ r31_32bit:
     hlt
     ;iret
 ;---------------------------------
+
+[bits 64]
+section .data
+
+;section .dss
+
+section .text
+
+start_64bit:
+    mov al, 'g'
+    mov [0xB810c], al  ; VGAに文字表示
+    jmp $
