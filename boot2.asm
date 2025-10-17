@@ -232,26 +232,31 @@ start_msg_32bit:
 
 ;GDTの作成
 gdt64bit_start:
-    dw 0x0000
-    dw 0x0000
-    dd 0x00
-    dd 0x00
-    dd 0x00
-    dd 0x00
+    dq 0x0000000000000000
+    ;dw 0x0000
+    ;dw 0x0000
+    ;dd 0x00
+    ;dd 0x00
+    ;dd 0x00
+    ;dd 0x00
 
-    dw 0x0000
-    dw 0x0000
-    dd 0x00
-    dd 0x9a
-    dd 0xa0
-    dd 0x00
+    dq 0x00209A0000000000
+    ;dw 0xffff
+    ;dw 0x0000
+    ;dw 0x0000
+    ;dd 0x00
+    ;dd 0x9a
+    ;dd 0x20
+    ;dd 0x00
 
-    dd 0xffff
-    dd 0x0000
-    dd 0x00
-    dd 0x92
-    dd 0xa0
-    dd 0x00
+    dq 0x0000920000000000
+    ;dd 0xffff
+    ;dd 0x0000
+    ;dd 0x0000
+    ;dd 0x00
+    ;dd 0x92
+    ;dd 0x00
+    ;dd 0x00
 gdt64bit_end:
 
 gdt64bit_descriptor:
@@ -286,8 +291,8 @@ pd_table_32bit:
 
 align 4096
 pt_table_32bit:
-;    dq 0x00000000 | PAGE_FLAGS
-;    times 512 - 1 dq 0
+    ;dq 0x00000000 | PAGE_FLAGS
+    ;times 512 - 1 dq 0
     %assign i 0
     %rep 512
         dq (i << 12) | PAGE_FLAGS  ; 各4KBページをマッピング
@@ -414,21 +419,13 @@ start_32bit:
     mov esp, 0x9fc00
     mov ebp, esp
     call start_setup_32bit
-    ;call clean_screen
     call start_print_32bit
-    ;jmp $
     lgdt[gdt64bit_descriptor]
-    ;jmp $
     call paging_32bit
     ;sti
-    ;jmp $
-    mov al, 'f'
-    mov [0xB810a], al  ; VGAに文字表示
-    jmp $
     jmp 0x08:start_64bit
 
 paging_32bit:
-    ;pusha
     mov eax, cr4
     or eax, 1 << 5
     mov cr4, eax
@@ -436,7 +433,7 @@ paging_32bit:
     mov eax, pml4_table_32bit
     mov cr3, eax
 
-    mov ecx, 0xc0000080
+    mov ecx, 0xC0000080
     rdmsr
     or eax, 1 << 8
     wrmsr
@@ -445,8 +442,6 @@ paging_32bit:
     or eax, 1 << 31
     mov cr0, eax
 
-    ;jmp $
-    ;popa
     ret
 
 
@@ -775,6 +770,4 @@ section .data
 section .text
 
 start_64bit:
-    mov al, 'g'
-    mov [0xB810c], al  ; VGAに文字表示
     jmp $
