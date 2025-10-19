@@ -5,7 +5,7 @@
 ;オフセット
 ;LoadPlace1 * 16 + LoadPlace2が配置場所
 
-;%define SECONDBOOTSIZE 
+;%define SECONDBOOTSIZE
 
 %define KERNEL_SIZE 1
 
@@ -18,7 +18,7 @@
 section .data;bit共有データセクション
 
 VGA:
-    dd 0xb8000
+    dq 0xb8000
 
 corsor_Y:
     dd 0x00
@@ -113,7 +113,6 @@ print:;printの初めの部分
     mov byte [color], 0x07
     call load_corsor_16bit
     ret
-
 
 load_corsor_16bit:
     cmp al, 10
@@ -228,7 +227,7 @@ setup_protect_mode:
 section .data;32bit専用データセクション
 
 start_msg_32bit:
-    db 10, "Start 32bit Mode!", 10, 0
+    db "Start 32bit Mode!", 10, 0
 
 ;GDTの作成
 gdt64bit_start:
@@ -257,6 +256,7 @@ gdt64bit_start:
     ;dd 0x92
     ;dd 0x00
     ;dd 0x00
+
 gdt64bit_end:
 
 gdt64bit_descriptor:
@@ -307,11 +307,13 @@ start_setup_32bit:;32bitに入ったら初期化するものを入れるまた�
     mov ax, [corsor_Y]
     add ax, 1
     mov word[corsor_Y], ax
+    mov word[corsor_X], 0
 
     call setup_corsor_32bit
     ;call load_corsor_32bit
-    call load_corsor_32bit
+    ;all load_corsor_32bit
     ret
+
 setup_color_32bit:;背景とテキストカラーをVGAで扱える形に直す関数
     mov al, [back_color]
     shl al, 4
@@ -321,6 +323,7 @@ setup_color_32bit:;背景とテキストカラーをVGAで扱える形に直す�
     ret
 
 setup_corsor_32bit:;VGAの初期位置を決める
+    ;0xb8000 + ((Y * 80) + X) * 2 で計算
     mov eax, [corsor_Y]
     inc eax
     imul eax, 80
@@ -335,13 +338,13 @@ load_corsor_32bit:;カーソルの位置を
     pusha
     mov eax, [corsor_Y]
     mov ebx, [corsor_X]
-    je .load_corsor_false
-    jmp .load_corsor_end
-.load_corsor_false:
+    je .load_corsor_false_32bit
+    jmp .load_corsor_end_32bit
+.load_corsor_false_32bit:
     ;jmp $
     inc eax
     mov ebx, 0
-.load_corsor_end:
+.load_corsor_end_32bit:
     ;0xb8000+((y*80)+x)*2をもとに計算
     mov dword[corsor_Y], eax
     mov dword[corsor_X], ebx
@@ -354,7 +357,7 @@ load_corsor_32bit:;カーソルの位置を
     mov edi, [VGA]
     ret
 
-clean_screen:;画面をすべて消す関数1
+clean_screen_32bit:;画面をすべて消す関数1
     mov edi, 0xb8000    ;VGAメモリを直接入力
     mov ecx, 80 * 25
     mov ax, [back_color]
@@ -372,11 +375,10 @@ print_32bit:;文字を出力する関数
     mov edi, [VGA]
     call setup_color_32bit
     jmp .print_loop_32bit
-
 .print_loop_32bit:
     lodsb
     cmp al, 0
-    je .done
+    je .done_32bit
     cmp al, 10
     je .line_break_32bit
 .print_32bit_next:
@@ -385,7 +387,7 @@ print_32bit:;文字を出力する関数
     mov [edi], ax
     add edi, 2
     jmp .print_loop_32bit
-.done:
+.done_32bit:
     mov byte [color], 0x07
     call load_corsor_32bit
     ret
@@ -393,7 +395,6 @@ print_32bit:;文字を出力する関数
     call load_corsor_32bit
     ;jmp .print_32bit_next
     jmp .print_loop_32bit
-
 
 start_print_32bit:;32bit開始メッセージを出そす関数
     mov esi, start_msg_32bit
@@ -418,11 +419,11 @@ start_32bit:
     mov ss, ax
     mov esp, 0x9fc00
     mov ebp, esp
+    sti
     call start_setup_32bit
     call start_print_32bit
     lgdt[gdt64bit_descriptor]
     call paging_32bit
-    ;sti
     jmp 0x08:start_64bit
 
 paging_32bit:
@@ -443,7 +444,6 @@ paging_32bit:
     mov cr0, eax
 
     ret
-
 
 idt_setup_32bit:
     set_idt_entry_32bit 0, isr0_32bit, 0x08
@@ -476,7 +476,6 @@ idt_setup_32bit:
 ;ここから下が例外ハンドラの処理をする関数
 isr0_msg_32bit:;0
     db "de Ecode=0",32 ,0
-
 isr0_32bit:
     cli
     pushad
@@ -489,7 +488,6 @@ isr0_32bit:
 
 db_msg_32bit:;1
     db "db Ecode=1",32 ,0
-
 db_32bit:
     cli
     pushad
@@ -501,7 +499,6 @@ db_32bit:
 
 nmi_msg_32bit:;2
     db "nmi Ecode=2",32 ,0
-
 nmi_32bit:
     cli
     pushad
@@ -510,9 +507,9 @@ nmi_32bit:
     popad
     hlt
     ;iret
+
 bp_msg_32bit:;3
     db "bp Ecode=3",32 ,0
-
 bp_32bit:
     cli
     pushad
@@ -524,7 +521,6 @@ bp_32bit:
 
 of_msg_32bit:;4
     db "of Ecode=4",32 ,0
-
 of_32bit:
     cli
     pushad
@@ -536,7 +532,6 @@ of_32bit:
 
 br_msg_32bit:;5
     db "br Ecode=5",32 ,0
-
 br_32bit:
     cli
     pushad
@@ -548,7 +543,6 @@ br_32bit:
 
 ud_msg_32bit:;6
     db "ud Ecode=6",32 ,0
-
 ud_32bit:
     cli
     pushad
@@ -560,7 +554,6 @@ ud_32bit:
 
 nm_msg_32bit:;7
     db "nm Ecode=7",32 ,0
-
 nm_32bit:
     cli
     pushad
@@ -572,7 +565,6 @@ nm_32bit:
 
 df_msg_32bit:;8
     db "df Ecode=8",32 ,0
-
 df_32bit:
     cli
     pushad
@@ -584,7 +576,6 @@ df_32bit:
 
 r9_msg_32bit:;9
     db "r9(-) Ecode=9",32 ,0
-
 r9_32bit:
     cli
     pushad
@@ -596,7 +587,6 @@ r9_32bit:
 
 ts_msg_32bit:;10
     db "ts Ecode=10",32 ,0
-
 ts_32bit:
     cli
     pushad
@@ -608,7 +598,6 @@ ts_32bit:
 
 np_msg_32bit:;11
     db "np Ecode=11",32 ,0
-
 np_32bit:
     cli
     pushad
@@ -620,7 +609,6 @@ np_32bit:
 
 ss_msg_32bit:;12
     db "ss Ecode=12",32 ,0
-
 ss_32bit:
     cli
     pushad
@@ -629,9 +617,9 @@ ss_32bit:
     popad
     hlt
     ;iret
+
 gp_msg_32bit:;13
     db "gp Ecode=13",32 ,0
-
 gp_32bit:
     cli
     pushad
@@ -643,7 +631,6 @@ gp_32bit:
 
 pf_msg_32bit:;14
     db "pf Ecode=14",32 ,0
-
 pf_32bit:;
     cli
     pushad
@@ -655,7 +642,6 @@ pf_32bit:;
 
 r15_msg_32bit:;15
     db "r15(-) Ecode=15",32 ,0
-
 r15_32bit:
     cli
     pushad
@@ -667,7 +653,6 @@ r15_32bit:
 
 mf_msg_32bit:;16
     db "mf Ecode=16",32 ,0
-
 mf_32bit:
     cli
     pushad
@@ -679,7 +664,6 @@ mf_32bit:
 
 ac_msg_32bit:;17
     db "ac Ecode=17",32 ,0
-
 ac_32bit:
     cli
     pushad
@@ -691,7 +675,6 @@ ac_32bit:
 
 mc_msg_32bit:;18
     db "mc Ecode=18",32 ,0
-
 mc_32bit:
     cli
     pushad
@@ -703,7 +686,6 @@ mc_32bit:
 
 xf_msg_32bit:;19
     db "xf Ecode=19",32 ,0
-
 xf_32bit:
     cli
     pushad
@@ -715,7 +697,6 @@ xf_32bit:
 
 ve_msg_32bit:;20
     db "ve Ecode=20",32 ,0
-
 ve_32bit:
     cli
     pushad
@@ -727,7 +708,6 @@ ve_32bit:
 
 r21_29_msg_32bit:;21-29
     db "r21-29(-)br Ecode=21-29",32 ,0
-
 r21_29_32bit:
     cli
     pushad
@@ -739,7 +719,6 @@ r21_29_32bit:
 
 sx_msg_32bit:;30
     db "sx Ecode=30",32 ,0
-
 sx_32bit:
     cli
     pushad
@@ -751,7 +730,6 @@ sx_32bit:
 
 r31_msg_32bit:;31
     db "r31(-) Ecode=31",32 ,0
-
 r31_32bit:
     cli
     pushad
@@ -763,11 +741,128 @@ r31_32bit:
 ;---------------------------------
 
 [bits 64]
-section .data
+;section .data
+
+start_msg_64bit:
+    db "Start 64bit Mode!", 10, 0
+    ;db "SSSSSSSSSS", 10, 0
 
 ;section .dss
 
 section .text
 
+start_setup_64bit:
+    mov rax, [corsor_Y]
+    add rax, 1
+    mov qword[corsor_Y], rax
+    mov qword[corsor_X], 0
+
+    call setup_corsor_64bit
+    ;call load_corsor_64bit
+    ret
+
+setup_color_64bit:
+    mov al, [back_color]
+    shl al, 4
+    mov bl, [text_color]
+    or al, bl
+    mov byte[color], al
+    ret
+
+setup_corsor_64bit:
+    mov rax, [corsor_Y]
+    inc rax
+    imul rax, 80
+    add rax, [corsor_X]
+    imul rax, 2
+    add rax, 0xb8000
+    mov qword[VGA], rax
+    ret
+
+load_corsor_64bit:
+    ;0xb8000+((y*80)+x)*2をもとに計算
+    cmp al, 10
+    push rax
+    push rbx
+    mov eax, [corsor_Y]
+    mov ebx, [corsor_X]
+    je .load_corsor_false_64bit
+    jmp .load_corsor_end_64bit
+.load_corsor_false_64bit:
+    inc eax
+    mov ebx, 0
+.load_corsor_end_64bit:
+    mov dword[corsor_Y], eax
+    mov dword[corsor_X], ebx
+    imul eax, 80
+    add eax, ebx
+    imul eax, eax, 2
+    add eax, 0xb8000
+    mov dword[VGA], eax
+    pop rax
+    pop rbx
+    mov edi, [VGA]
+    ret
+
+clean_screen_64bit:
+    mov edi, 0xb8000
+    mov ecx, 80 * 25
+    mov ax, [back_color]
+    jmp .loop
+.loop:
+    mov [rdi], ax
+    add edi, 2
+    loop .loop
+    mov byte[corsor_Y], 0
+    mov byte[corsor_X], 0
+    call load_corsor_64bit
+    ret
+
+print_64bit:
+    mov rdi, [VGA]
+    call setup_color_64bit
+
+    ;jmp .print_loop_64bit
+.print_loop_64bit:
+    lodsb
+    cmp al, 0
+    je .done_64bit
+    cmp al, 10
+    je .line_break_64bit
+.print_64bit_next:
+    inc byte[corsor_X]
+    mov ah, [color]
+    stosw
+    jmp .print_loop_64bit
+.done_64bit:
+    mov dword[color], 0x07
+    call load_corsor_64bit
+    ret
+.line_break_64bit:
+    call load_corsor_64bit
+    jmp .print_loop_64bit
+
+start_print_64bit:
+    mov rsi, start_msg_64bit
+    mov al, 0x07
+    mov byte[text_color], al
+    call print_64bit
+    ret
+
 start_64bit:
+    cli
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    mov rsp, 0x90000
+    ;jmp $
+    ;call clean_screen_64bit
+    ;cli
+    call start_setup_64bit
+    call start_print_64bit
+    ;jmp $
+    ;sti
     jmp $
