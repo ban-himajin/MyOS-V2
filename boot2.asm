@@ -91,7 +91,7 @@ section .text
 
 jmp start
 
-print:;printの初めの部分
+print:;print関数
     lodsb
     cmp al, 0
     je .done_print
@@ -114,7 +114,7 @@ print:;printの初めの部分
     call load_corsor_16bit
     ret
 
-load_corsor_16bit:
+load_corsor_16bit:;カーソル位置を得る関数
     cmp al, 10
     mov ah, 0x03
     mov bh, 0x00
@@ -133,7 +133,7 @@ load_corsor_16bit:
     int 0x10
     ret
 
-start:
+start:;初めの部分
     cli
     xor ax, ax
     ;xor ax, 0x1000
@@ -158,13 +158,13 @@ second_start_print:
     call print
     ret
 
-enable_a20_fast:
+enable_a20_fast:;A20を有効にする関数
     in  al, 0x92
     or  al, 0x02
     out 0x92,al
     ret
 
-load_kernel:
+load_kernel:;次に使うファイルをロードする
     mov ax, KERNEL_LOAD_SEGMENT
     mov es, ax
     mov bx, KERNEL_LOAD_OFFSET
@@ -180,19 +180,19 @@ load_kernel:
     ;jc load_kernel_error
     jmp result_load_print
 
-load_kernel_error:
+load_kernel_error:;ロード失敗
     mov si, load_error
     mov dh, [color_red]
     mov byte[color], dh
     call print
     jmp $
 
-result_load_print:
+result_load_print:;ロード成功
     mov si, result_load_msg
     call print
     jmp setup_protect_mode
 
-setup_protect_mode:
+setup_protect_mode:;プロテクトモードへ移行
     call load_corsor_16bit
     cli
     ;jmp $
@@ -272,30 +272,47 @@ idt_ptr:
     dd idt
 
 ;ページングテーブルの定義
-%define PAGE_FLAGS 0x03
+%define PAGE_FLAGS 0x003  ; Present + Read/Write
 
 align 4096
-pml4_table_32bit:
-    dq pdpt_table_32bit + PAGE_FLAGS
+pml4_table_64bit:
+    dq pdpt_table_64bit + PAGE_FLAGS         ; PML4[0] → 下位仮想領域（identity map）
+    dq pdpt_table_higher_half + PAGE_FLAGS   ; PML4[511] → 高位仮想領域（カーネル用）
+    times 510 dq 0
+
+align 4096
+pdpt_table_64bit:
+    dq pd_table_64bit + PAGE_FLAGS
     times 511 dq 0
 
 align 4096
-pdpt_table_32bit:
-    dq pd_table_32bit + PAGE_FLAGS
+pdpt_table_higher_half:
+    dq pd_table_higher_half + PAGE_FLAGS
     times 511 dq 0
 
 align 4096
-pd_table_32bit:
-    dq pt_table_32bit + PAGE_FLAGS
+pd_table_64bit:
+    dq pt_table_64bit + PAGE_FLAGS
     times 511 dq 0
 
 align 4096
-pt_table_32bit:
-    ;dq 0x00000000 | PAGE_FLAGS
-    ;times 512 - 1 dq 0
+pd_table_higher_half:
+    dq pt_table_higher_half + PAGE_FLAGS
+    times 511 dq 0
+
+align 4096
+pt_table_64bit:
     %assign i 0
     %rep 512
-        dq (i << 12) | PAGE_FLAGS  ; 各4KBページをマッピング
+        dq (i << 12) | PAGE_FLAGS  ; Identity map: 0x00000000〜0x0007FFFF
+    %assign i i+1
+    %endrep
+
+align 4096
+pt_table_higher_half:
+    %assign i 0
+    %rep 512
+        dq (i << 12) | PAGE_FLAGS  ; 高位仮想アドレスに物理0x00000000〜をマップ
     %assign i i+1
     %endrep
 
@@ -333,7 +350,7 @@ setup_corsor_32bit:;VGAの初期位置を決める
     mov dword[VGA], eax
     ret
 
-load_corsor_32bit:;カーソルの位置を
+load_corsor_32bit:;カーソルの位置を更新
     cmp al, 10
     pusha
     mov eax, [corsor_Y]
@@ -357,7 +374,7 @@ load_corsor_32bit:;カーソルの位置を
     mov edi, [VGA]
     ret
 
-clean_screen_32bit:;画面をすべて消す関数1
+clean_screen_32bit:;画面をすべて消す関数
     mov edi, 0xb8000    ;VGAメモリを直接入力
     mov ecx, 80 * 25
     mov ax, [back_color]
@@ -396,7 +413,7 @@ print_32bit:;文字を出力する関数
     ;jmp .print_32bit_next
     jmp .print_loop_32bit
 
-start_print_32bit:;32bit開始メッセージを出そす関数
+start_print_32bit:;32bit開始メッセージを出す
     mov esi, start_msg_32bit
     mov al, 0x07
     mov byte[text_color], al
@@ -408,7 +425,7 @@ error_color:
     mov word[color], ax
     ret
 
-start_32bit:
+start_32bit:;32bit開始位置
     cli
     call idt_setup_32bit
     mov ax, 0x10
@@ -423,6 +440,7 @@ start_32bit:
     call start_setup_32bit
     call start_print_32bit
     lgdt[gdt64bit_descriptor]
+    ;jmp $
     call paging_32bit
     jmp 0x08:start_64bit
 
@@ -431,7 +449,7 @@ paging_32bit:
     or eax, 1 << 5
     mov cr4, eax
 
-    mov eax, pml4_table_32bit
+    mov eax, pml4_table_64bit
     mov cr3, eax
 
     mov ecx, 0xC0000080
@@ -751,7 +769,7 @@ start_msg_64bit:
 
 section .text
 
-start_setup_64bit:
+start_setup_64bit:;64bit初期化関数
     mov rax, [corsor_Y]
     add rax, 1
     mov qword[corsor_Y], rax
@@ -761,7 +779,7 @@ start_setup_64bit:
     ;call load_corsor_64bit
     ret
 
-setup_color_64bit:
+setup_color_64bit:;VGAで扱える色形式に変換する関数
     mov al, [back_color]
     shl al, 4
     mov bl, [text_color]
@@ -769,7 +787,7 @@ setup_color_64bit:
     mov byte[color], al
     ret
 
-setup_corsor_64bit:
+setup_corsor_64bit:;カーソルの初期値を決める関数
     mov rax, [corsor_Y]
     inc rax
     imul rax, 80
@@ -779,7 +797,7 @@ setup_corsor_64bit:
     mov qword[VGA], rax
     ret
 
-load_corsor_64bit:
+load_corsor_64bit:;カーソルを更新する関数
     ;0xb8000+((y*80)+x)*2をもとに計算
     cmp al, 10
     push rax
@@ -804,7 +822,7 @@ load_corsor_64bit:
     mov edi, [VGA]
     ret
 
-clean_screen_64bit:
+clean_screen_64bit:;画面内の文字をすべて消す関数
     mov edi, 0xb8000
     mov ecx, 80 * 25
     mov ax, [back_color]
@@ -818,7 +836,7 @@ clean_screen_64bit:
     call load_corsor_64bit
     ret
 
-print_64bit:
+print_64bit:;print関数
     mov rdi, [VGA]
     call setup_color_64bit
 
@@ -849,7 +867,7 @@ start_print_64bit:
     call print_64bit
     ret
 
-start_64bit:
+start_64bit:;64bit開始場所
     cli
     xor ax, ax
     mov ds, ax

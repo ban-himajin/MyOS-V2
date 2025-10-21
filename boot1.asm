@@ -2,7 +2,7 @@
 [org 0x7c00]
 
 ;----------定数作成スペース---------
-%define SECONDSIZE 48
+%define SECONDSIZE 72
 
 %define VGA 0xb8000
 
