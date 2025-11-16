@@ -68,6 +68,7 @@ DAP:
 section .data;16bit専用データセクション
 
 Second_Start_msg:
+    ;db 10, "Start Second Boot", 10, 0
     db "Start Second Boot", 10, 0
 
 result_load_msg:
@@ -111,45 +112,59 @@ section .text
 ;jmp $
 jmp start
 
-print:;print関数
+setup_color_16bit:
+    mov al, [back_color]
+    shl al, 4
+    mov bl, [text_color]
+    or al, bl
+    mov byte [color], al
+    ret
+
+print:
+    mov edi, [VGA]
+    call setup_color_16bit
+.print_vga_loop:
     lodsb
     cmp al, 0
-    je .done_print
+    je .done_print_vga
     cmp al, 10
     je .line_break_16bit
-.print_next:
-    mov ah, 0x0e
-    mov bh, 0x00
-    ;ページ番号
-    mov bl, [color]
-    ;文字の色
-    int 0x10
-    jmp print
+.print_16bit_next:
+    inc byte[corsor_X]
+    mov ah, [color]
+    
+    mov [edi], ax
+    add edi, 2
+    jmp .print_vga_loop
 .line_break_16bit:
     call load_corsor_16bit
-    jmp .print_next
-.done_print:
+    jmp .print_vga_loop
+.done_print_vga:
     mov byte [color], 0x07
     call load_corsor_16bit
     ret
 
-load_corsor_16bit:;カーソル位置を得る関数
+load_corsor_16bit:
     cmp al, 10
-    mov ah, 0x03
-    mov bh, 0x00
-    int 0x10
-    mov byte [corsor_Y], dh
-    mov byte [corsor_X], dl
+    pusha
+    mov eax, [corsor_Y]
+    mov ebx, [corsor_X]
     je .load_corsor_16bit_line_break
-    ret
+    jmp .load_corsor_16bit_end
 .load_corsor_16bit_line_break:
-    mov ah, 0x2
-    mov dh, 0x00
-    add dh, 1
-    mov dl, 0
-    mov byte [corsor_Y], dh
-    mov byte [corsor_X], dl
-    int 0x10
+    inc eax
+    mov ebx, 0
+.load_corsor_16bit_end:
+    ;0xb8000+((y*80)+x)*2をもとに計算
+    mov dword[corsor_Y], eax
+    mov dword[corsor_X], ebx
+    imul eax, 80
+    add eax, ebx
+    imul eax, eax, 2
+    add eax, 0xb8000
+    mov dword[VGA], eax
+    popa
+    mov edi, [VGA]
     ret
 
 DAPset:
@@ -176,6 +191,10 @@ start:;初めの部分
     cli
 
     mov byte[Boot_Drive], dl
+    mov word[corsor_X], ax
+    mov word[corsor_Y], bx
+    call load_corsor_16bit
+    ;mov word[corsor_Y], 2
 
     xor ax, ax
     ;xor ax, 0x1000
@@ -189,7 +208,7 @@ start:;初めの部分
 
     sti
 
-    call load_corsor_16bit
+    ;call load_corsor_16bit
     call second_start_print
     call enable_a20_fast
     ;jmp $
@@ -419,13 +438,13 @@ load_corsor_32bit:;カーソルの位置を更新
     pusha
     mov eax, [corsor_Y]
     mov ebx, [corsor_X]
-    je .load_corsor_false_32bit
-    jmp .load_corsor_end_32bit
-.load_corsor_false_32bit:
+    je .load_corsor_32bit_line_break
+    jmp .load_corsor_32bit_end
+.load_corsor_32bit_line_break:
     ;jmp $
     inc eax
     mov ebx, 0
-.load_corsor_end_32bit:
+.load_corsor_32bit_end:
     ;0xb8000+((y*80)+x)*2をもとに計算
     mov dword[corsor_Y], eax
     mov dword[corsor_X], ebx
@@ -455,7 +474,7 @@ clean_screen_32bit:;画面をすべて消す関数
 print_32bit:;文字を出力する関数
     mov edi, [VGA]
     call setup_color_32bit
-    jmp .print_loop_32bit
+    ;jmp .print_loop_32bit
 .print_loop_32bit:
     lodsb
     cmp al, 0
@@ -468,14 +487,14 @@ print_32bit:;文字を出力する関数
     mov [edi], ax
     add edi, 2
     jmp .print_loop_32bit
-.done_32bit:
-    mov byte [color], 0x07
-    call load_corsor_32bit
-    ret
 .line_break_32bit:
     call load_corsor_32bit
     ;jmp .print_32bit_next
     jmp .print_loop_32bit
+.done_32bit:
+    mov byte [color], 0x07
+    call load_corsor_32bit
+    ret
 
 start_print_32bit:;32bit開始メッセージを出す
     mov esi, start_msg_32bit
@@ -893,12 +912,12 @@ load_corsor_64bit:;カーソルを更新する関数
     push rbx
     mov eax, [corsor_Y]
     mov ebx, [corsor_X]
-    je .load_corsor_false_64bit
-    jmp .load_corsor_end_64bit
-.load_corsor_false_64bit:
+    je .load_corsor_64bit_line_break
+    jmp .load_corsor_64bit_end
+.load_corsor_64bit_line_break:
     inc eax
     mov ebx, 0
-.load_corsor_end_64bit:
+.load_corsor_64bit_end:
     mov dword[corsor_Y], eax
     mov dword[corsor_X], ebx
     imul eax, 80
