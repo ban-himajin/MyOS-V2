@@ -29,7 +29,6 @@ section .text
 
 ;----------------------------------
 
-
 jmp start
 ;seciton .data
 
@@ -189,6 +188,7 @@ DAPset:
 
     pop ax
     ret
+
 start:
     cli
     mov byte[Boot_Drive], dl
@@ -228,13 +228,14 @@ error_print:;指定の位置にファイルがなかった場合に実行
     jmp $
 
 load_disk:
+    push ax
     mov ax, LBA
     cmp ax, 1
     je load_lba
     jmp load_second
 
 load_lba:
-    push ax
+    mov ax, LBA
 
     mov ax, LBA_SIZE
     mov [sector_size], ax
@@ -248,13 +249,12 @@ load_lba:
     mov ax, LBA_START_SECTOR
     mov [sector_num], ax
 
-    pop ax
     call DAPset
     call load_sector
     jmp load_second
 
 load_second:
-    push ax
+    mov ax, LBA
 
     mov ax, SECOND_SIZE
     mov [sector_size], ax
@@ -278,6 +278,11 @@ load_sector:
     mov si, DAP
     mov ah, 0x42
     mov dl, [Boot_Drive]
+
+    mov bx, [DAP + 4]
+    mov ax, [DAP + 6]
+    mov es, ax
+
     int 0x13
     
     jc error_print

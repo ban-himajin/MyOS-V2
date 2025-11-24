@@ -109,7 +109,6 @@ gdt32bit_descriptor:
 ;section .bss
 
 section .text
-;jmp $
 jmp start
 
 setup_color_16bit:
@@ -258,6 +257,10 @@ load_sector:
     mov ah, 0x42
     mov dl, [Boot_Drive]
     int 0x13
+
+    mov bx, [DAP + 4]
+    mov ax, [DAP + 6]
+    mov es, ax
     
     jc load_sector_error
     call result_load_print
@@ -402,18 +405,6 @@ pt_table_higher_half:
 ;seciton .bss
 
 section .text
-start_setup_32bit:;32bitに入ったら初期化するものを入れるまた初期化に使う関数でも可
-    ;現在カーソル位置からどれだけずらした位置を初期位置にするか
-    mov ax, [corsor_Y]
-    add ax, 1
-    mov word[corsor_Y], ax
-    mov word[corsor_X], 0
-
-    call setup_corsor_32bit
-    ;call load_corsor_32bit
-    ;all load_corsor_32bit
-    ret
-
 setup_color_32bit:;背景とテキストカラーをVGAで扱える形に直す関数
     mov al, [back_color]
     shl al, 4
@@ -520,7 +511,7 @@ start_32bit:;32bit開始位置
     mov esp, 0x9fc00
     mov ebp, esp
     sti
-    call start_setup_32bit
+    call setup_corsor_32bit
     call start_print_32bit
     lgdt[gdt64bit_descriptor]
     call paging_32bit
