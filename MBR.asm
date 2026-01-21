@@ -4,7 +4,8 @@
 ;section .text
 
 ;----------定数作成スペース---------
-%define FARST_SECTOR_OFFSET 0x8000
+;%define FARST_SECTOR_OFFSET 0x8000
+%define FARST_SECTOR_OFFSET 0x0900
 ;%define FARST_SECTOR_OFFSET 0x7e00
 %define FARST_SECTOR_SEGMENT 0x0000
 
@@ -60,7 +61,6 @@ start:
     mov byte[Boot_Drive], dl
     xor ax, ax
     mov ds, ax
-    mov es, ax
     mov es, ax
     mov ss, ax
     mov sp, 0x7bcc
@@ -130,7 +130,7 @@ partition_table:
     db 0x00,0x02,0x00     ; CHS開始位置（例）
     db 0xaa               ; パーティションタイプ
     db 0xFF,0xFF,0xFF     ; CHS終了位置（例）
-    dd 2048               ; LBA数値 * 512が開始位置 LBA開始セクター (リトルエンディアン)
+    dd 2048               ; LBA数値 * 512が開始位置 パーティション開始位置 (リトルエンディアン)
     ;dd 8               ; LBA数値 * 512が開始位置 LBA開始位置 (リトルエンディアン)
     dd 4096               ; ブロック数 * 512が全体サイズになる パーティションサイズ (リトルエンディアン)
 times 510-($-$$) db 0
