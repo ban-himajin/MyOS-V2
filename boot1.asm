@@ -9,15 +9,6 @@ section .text
 
 ;----------定数作成スペース---------
 
-;1ならtrue,0ならfalse
-%define LBA 0
-
-;LBAの設定
-%define LBA_SIZE 1
-%define LBA_SECTOR_OFFSET 0x0600
-%define LBA_SECTOR_SEGMENT 0x0000
-%define LBA_START_SECTOR 1
-
 ;セカンドローダーの設定
 ;%define SECOND_SECTOR 72
 %define SECOND_SIZE 88
@@ -198,15 +189,15 @@ start:
     mov es, ax
     mov ss, ax
     ;mov sp, 0x7bff
-    mov sp, 0x7c00
+    ;mov sp, 0x7c00
+    mov sp, 0x7fff
     ;スタックの開始位置
     sti
     call no_displey_corsor
     ;call load_corsor_16bit
     call clean_screen_16bit
     call start_print
-    call load_disk
-    call load_sector
+    call load_second
     ; ES:DI に文字セルのアドレス
     ; AL に文字コード、AH に属性
 
@@ -227,34 +218,8 @@ error_print:;指定の位置にファイルがなかった場合に実行
     call print
     jmp $
 
-load_disk:
-    push ax
-    mov ax, LBA
-    cmp ax, 1
-    je load_lba
-    jmp load_second
-
-load_lba:
-    mov ax, LBA
-
-    mov ax, LBA_SIZE
-    mov [sector_size], ax
-
-    mov ax, LBA_SECTOR_OFFSET
-    mov [sector_offset], ax
-
-    mov ax, LBA_SECTOR_SEGMENT
-    mov [sector_segment], ax
-
-    mov ax, LBA_START_SECTOR
-    mov [sector_num], ax
-
-    call DAPset
-    call load_sector
-    jmp load_second
-
 load_second:
-    mov ax, LBA
+    push ax
 
     mov ax, SECOND_SIZE
     mov [sector_size], ax
@@ -279,9 +244,10 @@ load_sector:
     mov ah, 0x42
     mov dl, [Boot_Drive]
 
-    mov bx, [DAP + 4]
-    mov ax, [DAP + 6]
-    mov es, ax
+    ;この下のコメントを削除するとboot2へ移行できなくなる
+    ;mov bx, [DAP + 4]
+    ;mov ax, [DAP + 6]
+    ;mov es, ax
 
     int 0x13
     

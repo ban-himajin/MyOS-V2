@@ -1,3 +1,5 @@
+
+[org 0x8000]
 ;----------定数作成スペース---------
 
 
@@ -63,7 +65,6 @@ DAP:
     dq 0;読み込みセクタ開始場所(セクタ0からの計算ではなく現在位置からの移動数)
 
 [BITS 16]
-[org 0x8000]
 
 section .data;16bit専用データセクション
 
@@ -363,8 +364,8 @@ idt_ptr_32bit:
 align 4096
 pml4_table_64bit:
     dq pdpt_table_64bit + PAGE_FLAGS         ; PML4[0] → 下位仮想領域（identity map）
-    dq pdpt_table_higher_half + PAGE_FLAGS   ; PML4[511] → 高位仮想領域（カーネル用）
     times 510 dq 0
+    dq pdpt_table_higher_half + PAGE_FLAGS   ; PML4[511] → 高位仮想領域（カーネル用）
 
 align 4096
 pdpt_table_64bit:
@@ -396,7 +397,7 @@ pt_table_64bit:
 
 align 4096
 pt_table_higher_half:
-    %assign i 0
+    %assign i 0x00100000 ;ここの数値を変えることでメモリ割り当て初期位置を変更可能
     %rep 512
         dq (i << 12) | PAGE_FLAGS  ; 高位仮想アドレスに物理0x00000000〜をマップ
     %assign i i+1
