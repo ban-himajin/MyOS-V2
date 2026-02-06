@@ -1,5 +1,11 @@
 # MyOS-V2
 
+### [1.プロジェクトについて](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#bootloader%E3%81%AE%E8%A9%B3%E7%B4%B0)
+### [2.進捗状況](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#bootloader%E3%81%AE%E8%A9%B3%E7%B4%B0)
+### [3.使用](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#bootloader%E3%81%AE%E8%A9%B3%E7%B4%B0)
+### [4.実装済み&実装予定ライブラリ](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#4%E5%AE%9F%E8%A3%85%E6%B8%88%E3%81%BF%E5%AE%9F%E8%A3%85%E4%BA%88%E5%AE%9A%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA)
+### [5.規約](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#5%E8%A6%8F%E7%B4%84)
+
 ## 1.プロジェクトについて
 このプロジェクトは現在BIOSを前提としたOSの開発をしていますが、今後UEFIの対応も考えて開発をしています。  
 また基本的にこのプロジェクトは私が興味関心があるため技術的に不安定な場所、適切ではない書き方、間違いなどが多いと思いますのでその最は指摘をいただけると嬉しいです。  
@@ -14,6 +20,7 @@ VBRもMBR同様動作確認用の簡素なものはありますが機能が不�
 ### BootLoader：進捗度20%
 ブートローダーについては現在16bitモードをはじめとして32bitへの移行をした地点まで開発しました。  
 今後は32bitからC言語へ移行しブートローダーを開発していきます。
+[BootLoaderの詳細](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#bootloader%E3%81%AE%E8%A9%B3%E7%B4%B0)
 
 ### Kernel：進捗度0%
 ブートローダー自体ができていないのでまだ手を付けていません。  
