@@ -19,7 +19,7 @@ VBRもMBR同様動作確認用の簡素なものはありますが機能が不�
 
 ### BootLoader：進捗度20%
 ブートローダーについては現在16bitモードをはじめとして32bitへの移行をした地点まで開発しました。  
-今後は32bitからC言語へ移行しブートローダーを開発していきます。
+今後は32bitからC言語へ移行しブートローダーを開発していきます。  
 [BootLoaderの詳細](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#bootloader%E3%81%AE%E8%A9%B3%E7%B4%B0)
 
 ### Kernel：進捗度0%
