@@ -1,9 +1,10 @@
-#ifndef VGA_DRIVER_V1
-#define VGA_DRIVER_V1 1
+#ifndef VGA_DRIVER
+#define VGA_DRIVER 1
+#define VGA_Version 1.0
 #define VGA_Start_Memory 0xb8000
 #define VGA_HEIGHT 25
 #define VGA_WIDTH 80
-#define COLLAR(tc, bc) ((tc<<4) | (bc))
+#define COLLAR(bc, tc) ((bc<<4) | (tc))
 
 //-----CollarList-----
 #define Black 0
@@ -33,19 +34,19 @@ int __attribute__((section(".Ctext"))) set_vga(unsigned short **VGA, const unsig
     return 0;
 }
 
-int  __attribute__((section(".Ctext"))) write_vga_text(unsigned short **VGA, unsigned char text, unsigned char collar){//VGA write text
+int  __attribute__((section(".Ctext"))) write_vga_text(unsigned short **VGA, const unsigned char text, const unsigned char collar){//VGA write text
     **VGA = (unsigned short)((collar << 8) | (text));
     (*VGA)++;
     return 0;
 }
 
-int  __attribute__((section(".Ctext"))) write_vga_texts(unsigned short **VGA, unsigned char text[], unsigned char collar){//VGA write texts
+int  __attribute__((section(".Ctext"))) write_vga_texts(unsigned short **VGA, const unsigned char text[], const unsigned char collar){//VGA write texts
     unsigned int count;
     for(count = 0;text[count] != '\0';count++)write_vga_text(VGA, text[count], collar);
     return 0;
 }
 
-int  __attribute__((section(".Ctext"))) clean_screen (unsigned char offset_text, unsigned char offset_collar){//crean screen texts
+int  __attribute__((section(".Ctext"))) clean_screen (const unsigned char offset_text, const unsigned char offset_collar){//crean screen texts
     unsigned short *VGA = (unsigned short*)VGA_Start_Memory;
     int loop_count;
     for(loop_count = 0;loop_count < (VGA_HEIGHT * VGA_WIDTH);loop_count++)write_vga_text(&VGA, offset_text, offset_collar);
