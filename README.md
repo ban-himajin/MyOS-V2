@@ -63,3 +63,9 @@ Kernel自体ができていないのでまた手を付けていません。
 |std|OS開発時に使う自作標準ライブラリ|-|
 |VGA_Driver|ブートローダーで使うVGA出力をする最低限のドライバ|[VGA_Driver.md](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/Library/VGA_Driver/VGA_Driver.md)|
 |SATA_Driver|ブートローダーで使う最低限のSATA操作ができるドライバ|-|
+
+### 5.規約
+- 改変、改造の自由
+- 改変、改造を自作したものとして公開を禁止します
+  - 改変や改造したものを公開するのであれば個のリポジトリのURLを記載をお願いします
+- このOSの実機、エミュレーターなどでの起動で起きた破損、故障、トラブルについては一切責任を取りません
