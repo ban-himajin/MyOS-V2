@@ -1,6 +1,15 @@
 ;[org 0x8000]
 
-;MainBootLoderPrograms
+;MainKernelLoderPrograms
+
+;-------ProgramConstantDatas------
+%define Kernel_SIZE 0
+%define Kernel_SECTOR_OFFSET 0x0000
+%define Kernel_SECTOR_SEGMENT 0x0000
+%define Kernel_START_SECTOR 0
+
+;----------------------------------
+
 
 ;-------ProgramAllDate------------
 ;ProgramLabelValuesSection
@@ -75,6 +84,7 @@ start_16bit:
 
     sti
     call enable_a20_fast
+    call load_kernel
     jmp setup_protect_mode
     
 enable_a20_fast:;A20 balid func
@@ -83,9 +93,7 @@ enable_a20_fast:;A20 balid func
     out 0x92,al
     ret
 
-setDAP:;DBPLabelUseSet
-    push ax
-
+DAPset:;DBPLabelUseSet
     mov ax, [sector_size]
     mov word[DAP + 2], ax
 
@@ -96,11 +104,26 @@ setDAP:;DBPLabelUseSet
     mov word[DAP + 6], ax
 
     mov ax, word[sector_num]
-    mov [DAP + 8], ax
+    mov [DAP + 8], eax
     mov ax, word[sector_num + 2]
-    mov [DAP + 10], ax
+    mov [DAP + 10], eax
 
-    pop ax
+    ret
+
+load_kernel:    
+    mov ax, Kernel_SIZE
+    mov [sector_size], ax
+
+    mov ax, Kernel_SECTOR_OFFSET
+    mov [sector_offset], ax
+
+    mov ax, Kernel_SECTOR_SEGMENT
+    mov [sector_segment], ax
+
+    mov ax, Kernel_START_SECTOR
+    mov [sector_num], ax
+
+    call DAPset
     ret
 
 read_secter_func:;ReadOnlyFunction
@@ -108,16 +131,12 @@ read_secter_func:;ReadOnlyFunction
     mov ah, 0x42
     mov dl, [Boot_Drive]
     int 0x13
-
-    mov bx, [DAP + 4]
-    mov ax, [DAP + 6]
-    mov es, ax
     
     jc .read_error
     ret
-
 .read_error:;ReadSecterError
     jmp $
+
 setup_protect_mode:
 
     cli
@@ -151,7 +170,6 @@ idt_ptr_32bit:
     dd idt_32bit
 
 section .text32
-;[bits 32]
 start_32bit:
     extern C_loader_main
     cli
@@ -164,9 +182,10 @@ start_32bit:
     mov esp, 0x9fc00
     mov ebp, esp
     call set_idt_32bit
+    sti
     ;mov dword [0xB8000], 0x2F332F33 ; "33"
     call C_loader_main
-    sti
+
     jmp $
 
 .hang:
