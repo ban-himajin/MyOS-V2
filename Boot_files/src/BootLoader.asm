@@ -135,7 +135,8 @@ read_secter_func:;ReadOnlyFunction
     jc .read_error
     ret
 .read_error:;ReadSecterError
-    jmp $
+    hlt
+    jmp .read_error
 
 setup_protect_mode:
 
@@ -169,6 +170,12 @@ idt_ptr_32bit:
     dw 256 * 8 - 1
     dd idt_32bit
 
+PIC1_IRQ_mask_data:
+    db 0
+
+PIC2_IRQ_mask_data:
+    db 0
+
 section .text32
 start_32bit:
     extern C_loader_main
@@ -182,6 +189,7 @@ start_32bit:
     mov esp, 0x9fc00
     mov ebp, esp
     call set_idt_32bit
+    call set_irq_32bit
     sti
     ;mov dword [0xB8000], 0x2F332F33 ; "33"
     call C_loader_main
@@ -192,11 +200,42 @@ start_32bit:
     hlt
     jmp .hang
 
-;init_32bit:
-;    ret
+set_irq_32bit:
+    %define PIC1 0x20
+    %define PIC2 0xA0
+    %define PIC1_DATA 0x21
+    %define PIC2_DATA 0xA1
+
+    ;ICW1
+    mov al, 0x11
+    out PIC1, al
+    out PIC2, al
+
+    ;ICW2
+    mov al, 0x20
+    out PIC1_DATA, al
+    mov al, 0x28
+    out PIC2_DATA, al
+
+    ;ICW3
+    mov al, 0x4
+    out PIC1_DATA, al
+    mov al, 0x2
+    out PIC2_DATA, al
+
+    ;ICW4
+    mov al, 0x01
+    out PIC1_DATA, al
+    out PIC2_DATA, al
+
+    mov al, byte[PIC1_IRQ_mask_data]
+    out PIC1_DATA, al
+    mov al, byte[PIC2_IRQ_mask_data]
+    out PIC2_DATA, al
+
+    ret
 
 set_idt_32bit:
-    cli
     set_idt_entry_32bit 0, isr0_32bit, 0x08
     set_idt_entry_32bit 5, isr5_32bit, 0x08
     set_idt_entry_32bit 6, isr6_32bit, 0x08
@@ -207,7 +246,6 @@ set_idt_32bit:
     set_idt_entry_32bit 14, isr14_32bit, 0x08
     set_idt_entry_32bit 16, isr16_32bit, 0x08
     lidt [idt_ptr_32bit]
-    sti
     ret
 
 ;--------isr_set_field-----------
