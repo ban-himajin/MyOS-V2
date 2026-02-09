@@ -4,11 +4,13 @@
 ### [2.進捗状況](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#2%E9%80%B2%E6%8D%97%E7%8A%B6%E6%B3%81-1)
 ### [3.使用](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#3%E4%BB%95%E6%A7%98)
 ### [4.実装済み&実装予定ライブラリ](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#4%E5%AE%9F%E8%A3%85%E6%B8%88%E3%81%BF%E5%AE%9F%E8%A3%85%E4%BA%88%E5%AE%9A%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA-1)
-### [5.規約](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#5%E8%A6%8F%E7%B4%84-1)
+### [5.コードのコンパイル、アセンブルについて](https://github.com/ban-himajin/MyOS-V2/edit/main/README.md#5%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AE%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%82%A2%E3%82%BB%E3%83%B3%E3%83%96%E3%83%AB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6-1)
+### [6.規約](https://github.com/ban-himajin/MyOS-V2/edit/main/README.md#6%E8%A6%8F%E7%B4%84-1)
 
 ## 1.プロジェクトについて
 このプロジェクトは現在BIOSを前提としたOSの開発をしていますが、今後UEFIの対応も考えて開発をしています。  
 また基本的にこのプロジェクトは私が興味関心があるため技術的に不安定な場所、適切ではない書き方、間違いなどが多いと思いますのでその最は指摘をいただけると嬉しいです。  
+PullRequest自体は私の考えるOSに近しいものだったり便利になりそうなものだった場合はマージさせていただきます。  
 
 ## 2.進捗状況
 ### MBR：進捗度0%
@@ -49,6 +51,7 @@ Kernel自体ができていないのでまた手を付けていません。
 #### 32bit/asm
 - [x] 初期化
 - [x] 例外登録
+- [x] IRQの登録
 - [x] C言語ローダー呼び出し
 - [ ] 64bit用GDTの設定
 - [ ] ページング
@@ -67,11 +70,14 @@ Kernel自体ができていないのでまた手を付けていません。
 ### 4.実装済み&実装予定ライブラリ
 |ライブラリ名|ライブラリ内容|ライブラリの詳細|
 |-------|--------|--------|
-|std|OS開発時に使う自作標準ライブラリ|-|
+|std|OS開発時に使う自作標準ライブラリ|[Std_Library_Folder](https://github.com/ban-himajin/MyOS-V2/tree/main/Boot_files/Library/std)|
 |VGA_Driver|ブートローダーで使うVGA出力をする最低限のドライバ|[VGA_Driver.md](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/Library/VGA_Driver/VGA_Driver.md)|
-|SATA_Driver|ブートローダーで使う最低限のSATA操作ができるドライバ|-|
 
-### 5.規約
+### 5.コードのコンパイル、アセンブルについて
+現状コードのコンパイル、アセンブル、結合については公開できるものの  
+一部自作したツールによるコードも含まれるため自作ツールを含まないコマンドができ次第公開したいと思います
+
+### 6.規約
 - 改変、改造の自由
 - 改変、改造を自作したものとして公開を禁止します
   - 改変や改造したものを公開するのであれば個のリポジトリのURLを記載をお願いします
