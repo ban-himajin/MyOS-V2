@@ -135,7 +135,8 @@ read_secter_func:;ReadOnlyFunction
     jc .read_error
     ret
 .read_error:;ReadSecterError
-    jmp $
+    hlt
+    jmp .read_error
 
 setup_protect_mode:
 
@@ -154,11 +155,14 @@ setup_protect_mode:
     ;%2:ハンドラアドレス
     ;%3:セグメントセレクタ
 
-    mov word [idt_32bit + %1 * 8 + 0], (%2-$$) & 0xffff   ;offset_low
-    mov word [idt_32bit + %1 * 8 + 2], %3                 ;selector
-    mov byte [idt_32bit + %1 * 8 + 4], 0                  ;zero
-    mov byte [idt_32bit + %1 * 8 + 5], 0x8e               ;type_attr(割り込みゲート)
-    mov word [idt_32bit + %1 * 8 + 6], (%2-$$) >> 16      ;offset_high
+    lea eax, [%2]                 ; ハンドラの線形アドレス取得
+
+    mov word [idt_32bit + %1*8 + 0], ax     ;offset_low
+    mov word [idt_32bit + %1*8 + 2], %3     ;selector
+    mov byte [idt_32bit + %1*8 + 4], 0      ;zero
+    mov byte [idt_32bit + %1*8 + 5], 0x8E   ;type_attr(割り込みゲート)
+    shr eax, 16
+    mov word [idt_32bit + %1*8 + 6], ax     ;offset_high
 %endmacro
 
 ;------------------------------------------
@@ -168,6 +172,12 @@ idt_32bit:
 idt_ptr_32bit:
     dw 256 * 8 - 1
     dd idt_32bit
+
+PIC1_IRQ_mask_data:
+    db 0x00
+
+PIC2_IRQ_mask_data:
+    db 0x00
 
 section .text32
 start_32bit:
@@ -182,8 +192,10 @@ start_32bit:
     mov esp, 0x9fc00
     mov ebp, esp
     call set_idt_32bit
+    call set_irq_32bit
     sti
     ;mov dword [0xB8000], 0x2F332F33 ; "33"
+    ;jmp $
     call C_loader_main
 
     jmp $
@@ -192,11 +204,42 @@ start_32bit:
     hlt
     jmp .hang
 
-;init_32bit:
-;    ret
+set_irq_32bit:
+    %define PIC1 0x20
+    %define PIC2 0xA0
+    %define PIC1_DATA 0x21
+    %define PIC2_DATA 0xA1
+
+    ;ICW1
+    mov al, 0x11
+    out PIC1, al
+    out PIC2, al
+
+    ;ICW2
+    mov al, 0x20
+    out PIC1_DATA, al
+    mov al, 0x28
+    out PIC2_DATA, al
+
+    ;ICW3
+    mov al, 0x4
+    out PIC1_DATA, al
+    mov al, 0x2
+    out PIC2_DATA, al
+
+    ;ICW4
+    mov al, 0x01
+    out PIC1_DATA, al
+    out PIC2_DATA, al
+
+    mov al, byte[PIC1_IRQ_mask_data]
+    out PIC1_DATA, al
+    mov al, byte[PIC2_IRQ_mask_data]
+    out PIC2_DATA, al
+
+    ret
 
 set_idt_32bit:
-    cli
     set_idt_entry_32bit 0, isr0_32bit, 0x08
     set_idt_entry_32bit 5, isr5_32bit, 0x08
     set_idt_entry_32bit 6, isr6_32bit, 0x08
@@ -207,7 +250,6 @@ set_idt_32bit:
     set_idt_entry_32bit 14, isr14_32bit, 0x08
     set_idt_entry_32bit 16, isr16_32bit, 0x08
     lidt [idt_ptr_32bit]
-    sti
     ret
 
 ;--------isr_set_field-----------
@@ -246,7 +288,7 @@ isr12_32bit:
 
 global isr13_32bit
 isr13_32bit:
-    push dword 13
+    ;push dword 13
     jmp isr_common
 
 global isr14_32bit
@@ -263,9 +305,10 @@ isr16_32bit:
 
 
 ;--------isr_common_function------------
-global isr_common
+;global isr_common
 extern isr_C_function
 isr_common:
+    ;jmp $
     cli
     pusha
 
@@ -279,7 +322,7 @@ isr_common:
     mov es, ax
 
     push esp
-    ;call isr_C_function
+    call isr_C_function
     add esp, 4
 
     pop gs
@@ -287,9 +330,9 @@ isr_common:
     pop es
     pop ds
     popa
-    ;add esp, 4
+    add esp, 4
     sti
-    iret
+    ;iret
 
 .hang:
     hlt
