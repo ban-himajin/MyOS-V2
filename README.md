@@ -4,8 +4,8 @@
 ### [2.進捗状況](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#2%E9%80%B2%E6%8D%97%E7%8A%B6%E6%B3%81-1)
 ### [3.使用](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#3%E4%BB%95%E6%A7%98)
 ### [4.実装済み&実装予定ライブラリ](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#4%E5%AE%9F%E8%A3%85%E6%B8%88%E3%81%BF%E5%AE%9F%E8%A3%85%E4%BA%88%E5%AE%9A%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA-1)
-### [5.コードのコンパイル、アセンブルについて](https://github.com/ban-himajin/MyOS-V2/edit/main/README.md#5%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AE%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%82%A2%E3%82%BB%E3%83%B3%E3%83%96%E3%83%AB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6-1)
-### [6.規約](https://github.com/ban-himajin/MyOS-V2/edit/main/README.md#6%E8%A6%8F%E7%B4%84-1)
+### [5.コードのコンパイル、アセンブルについて](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#5%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AE%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%82%A2%E3%82%BB%E3%83%B3%E3%83%96%E3%83%AB%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6-1)
+### [6.規約](https://github.com/ban-himajin/MyOS-V2/tree/main#6%E8%A6%8F%E7%B4%84-1)
 
 ## 1.プロジェクトについて
 このプロジェクトは現在BIOSを前提としたOSの開発をしていますが、今後UEFIの対応も考えて開発をしています。  
