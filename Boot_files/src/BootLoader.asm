@@ -155,11 +155,14 @@ setup_protect_mode:
     ;%2:ハンドラアドレス
     ;%3:セグメントセレクタ
 
-    mov word [idt_32bit + %1 * 8 + 0], (%2-$$) & 0xffff   ;offset_low
-    mov word [idt_32bit + %1 * 8 + 2], %3                 ;selector
-    mov byte [idt_32bit + %1 * 8 + 4], 0                  ;zero
-    mov byte [idt_32bit + %1 * 8 + 5], 0x8e               ;type_attr(割り込みゲート)
-    mov word [idt_32bit + %1 * 8 + 6], (%2-$$) >> 16      ;offset_high
+    lea eax, [%2]                 ; ハンドラの線形アドレス取得
+
+    mov word [idt_32bit + %1*8 + 0], ax     ;offset_low
+    mov word [idt_32bit + %1*8 + 2], %3     ;selector
+    mov byte [idt_32bit + %1*8 + 4], 0      ;zero
+    mov byte [idt_32bit + %1*8 + 5], 0x8E   ;type_attr(割り込みゲート)
+    shr eax, 16
+    mov word [idt_32bit + %1*8 + 6], ax     ;offset_high
 %endmacro
 
 ;------------------------------------------
@@ -171,10 +174,10 @@ idt_ptr_32bit:
     dd idt_32bit
 
 PIC1_IRQ_mask_data:
-    db 0
+    db 0x00
 
 PIC2_IRQ_mask_data:
-    db 0
+    db 0x00
 
 section .text32
 start_32bit:
@@ -192,6 +195,7 @@ start_32bit:
     call set_irq_32bit
     sti
     ;mov dword [0xB8000], 0x2F332F33 ; "33"
+    ;jmp $
     call C_loader_main
 
     jmp $
@@ -284,7 +288,7 @@ isr12_32bit:
 
 global isr13_32bit
 isr13_32bit:
-    push dword 13
+    ;push dword 13
     jmp isr_common
 
 global isr14_32bit
@@ -301,9 +305,10 @@ isr16_32bit:
 
 
 ;--------isr_common_function------------
-global isr_common
+;global isr_common
 extern isr_C_function
 isr_common:
+    ;jmp $
     cli
     pusha
 
@@ -317,7 +322,7 @@ isr_common:
     mov es, ax
 
     push esp
-    ;call isr_C_function
+    call isr_C_function
     add esp, 4
 
     pop gs
@@ -325,9 +330,9 @@ isr_common:
     pop es
     pop ds
     popa
-    ;add esp, 4
+    add esp, 4
     sti
-    iret
+    ;iret
 
 .hang:
     hlt
