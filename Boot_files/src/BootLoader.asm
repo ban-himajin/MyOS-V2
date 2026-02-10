@@ -124,6 +124,7 @@ load_kernel:
     mov [sector_num], ax
 
     call DAPset
+    call read_secter_func
     ret
 
 read_secter_func:;ReadOnlyFunction
@@ -194,8 +195,6 @@ start_32bit:
     call set_idt_32bit
     call set_irq_32bit
     sti
-    ;mov dword [0xB8000], 0x2F332F33 ; "33"
-    ;jmp $
     call C_loader_main
 
     jmp $
@@ -332,7 +331,7 @@ isr_common:
     popa
     add esp, 4
     sti
-    ;iret
+    iret
 
 .hang:
     hlt
