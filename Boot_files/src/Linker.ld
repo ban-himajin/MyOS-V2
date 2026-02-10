@@ -53,4 +53,5 @@ SECTIONS
         *(.bss.*)
     }
 
+    end = .;
 }
