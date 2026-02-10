@@ -70,7 +70,7 @@ Kernel自体ができていないのでまた手を付けていません。
 ### 4.実装済み&実装予定ライブラリ
 |ライブラリ名|ライブラリ内容|ライブラリの詳細|
 |-------|--------|--------|
-|std|OS開発時に使う自作標準ライブラリ|[Std_Library_Folder](https://github.com/ban-himajin/MyOS-V2/tree/main/Boot_files/Library/std)|
+|std|OS開発時に使う自作標準ライブラリ|[Std_Library_Folder](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/Library/std/std.md)|
 |VGA_Driver|ブートローダーで使うVGA出力をする最低限のドライバ|[VGA_Driver.md](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/Library/VGA_Driver/VGA_Driver.md)|
 
 ### 5.コードのコンパイル、アセンブルについて
