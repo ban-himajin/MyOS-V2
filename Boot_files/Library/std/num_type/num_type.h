@@ -1,6 +1,6 @@
 #ifndef NUM_TYPE
 #define NUM_TYPE 1
-#define NMU_TYPE_VER 1.0
+#define NMU_TYPE_VERSION 1.0
 
 typedef unsigned long long uint64;
 typedef unsigned int uint32;
