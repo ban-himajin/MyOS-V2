@@ -1,12 +1,12 @@
 #ifndef VGA_DRIVER
 #define VGA_DRIVER 1
-#define VGA_Version 1.0
-#define VGA_Start_Memory 0xb8000
+#define VGA_VERSION 1.0
+#define VGA_START_MEMORY 0xb8000
 #define VGA_HEIGHT 25
 #define VGA_WIDTH 80
-#define COLLAR(bc, tc) ((bc<<4) | (tc))
+#define COLOR(bc, tc) ((bc<<4) | (tc))
 
-//-----CollarList-----
+//-----ColorList-----
 #define Black 0
 #define Brue 1
 #define Green 2
@@ -26,34 +26,30 @@
 //--------------------
 
 unsigned short*  __attribute__((section(".Ctext"))) get_vga_memory(){//VGA Memory get function
-    return (unsigned short*)VGA_Start_Memory;
+    return (unsigned short*)VGA_START_MEMORY;
 }
 
 int __attribute__((section(".Ctext"))) set_vga(unsigned short **VGA, const unsigned char VGA_x, const unsigned char VGA_y){//VGA memory set X,Y
-    *VGA = (unsigned short*)VGA_Start_Memory + (VGA_y * VGA_WIDTH + VGA_x);
+    *VGA = (unsigned short*)VGA_START_MEMORY + (VGA_y * VGA_WIDTH + VGA_x);
     return 0;
 }
 
-int  __attribute__((section(".Ctext"))) write_vga_text(unsigned short **VGA, const unsigned char text, const unsigned char collar){//VGA write text
-    **VGA = (unsigned short)((collar << 8) | (text));
-    (*VGA)++;
+int  __attribute__((section(".Ctext"))) write_vga_text(unsigned short **VGA, const unsigned char text, const unsigned char color){//VGA write text
+    **VGA = (unsigned short)((color << 8) | (text));
+    (*VGA)+=1;
     return 0;
 }
 
-int  __attribute__((section(".Ctext"))) write_vga_texts(unsigned short **VGA, const unsigned char text[], const unsigned char collar){//VGA write texts
+int  __attribute__((section(".Ctext"))) write_vga_texts(unsigned short **VGA, const char* text, const unsigned char color){//VGA write texts
     unsigned int count;
-    for(count = 0;text[count] != '\0';count++)write_vga_text(VGA, text[count], collar);
+    for(count = 0;text[count] != '\0';count++)write_vga_text(VGA, text[count], color);
     return 0;
 }
 
-int  __attribute__((section(".Ctext"))) clean_screen (const unsigned char offset_text, const unsigned char offset_collar){//crean screen texts
-    unsigned short *VGA = (unsigned short*)VGA_Start_Memory;
+int  __attribute__((section(".Ctext"))) clean_screen (const unsigned char offset_text, const unsigned char offset_color){//crean screen texts
+    unsigned short *VGA = (unsigned short*)VGA_START_MEMORY;
     int loop_count;
-    for(loop_count = 0;loop_count < (VGA_HEIGHT * VGA_WIDTH);loop_count++)write_vga_text(&VGA, offset_text, offset_collar);
-    return 0;
-}
-
-int  __attribute__((section(".Ctext"))) test(){
+    for(loop_count = 0;loop_count < (VGA_HEIGHT * VGA_WIDTH);loop_count++)write_vga_text(&VGA, offset_text, offset_color);
     return 0;
 }
 
