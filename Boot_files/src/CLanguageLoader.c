@@ -1,6 +1,6 @@
 #include "../Library/VGA_Driver/VGA_Driver_v1.h"
-#include "../Library/std\num_type/num_type.h"
-
+#include "../Library/std/num_type/num_type.h"
+#include "../Library/std/Simple_Dynamic_Memory/Simple_Dynamic_Memory.h"
 
 void __attribute__((section(".Ctext"))) C_loader_main(void){
     uint8 VGA_x = 0;
@@ -17,7 +17,7 @@ void __attribute__((section(".Ctext"))) C_loader_main(void){
 
 
 void __attribute__((section(".Ctext"))) isr_C_function(void){
-    clean_screen('E', COLOR(Red,Black));
-    while(1){};
+    //clean_screen('E', COLOR(Red,Black));
+    //while(1){};
     return ;
 }
