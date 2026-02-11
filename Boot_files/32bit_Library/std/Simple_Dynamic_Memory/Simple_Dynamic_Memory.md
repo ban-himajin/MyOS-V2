@@ -19,3 +19,4 @@
 |関数名|引数|詳細|
 |-----|-----|-----|
 |SDMemory|<details><summary>引数の数(1)</summary>1.確保するサイズ数(byte単位)<details>|<details><summary>詳細</summary>1.安全にメモリを確保できるようにする。また、メモリ位置を返される<br>2.使用例:`SDMemory(sizeof(int)*5);`<br>3.関数設計:`void* __attribute__((section(".Ctext")))  SDMemory(size32_t size){void* start_memory = (void*)end_memory;end_memory += size;return start_memory;}`</details>|
+|align32|<details><summary>引数の数(1)</summary>1.何byteに整えるかの数値<details>|<details><summary>詳細</summary>1.指定のbyteサイズに整える<br>2.使用例:`align32(1024*1024*4)`<br>3.関数設計:`void __attribute__((section(".Ctext"))) align32(unsigned int size){end_memory = end_memory + (end_memory - (end_memory%size))return ;}`</details>|

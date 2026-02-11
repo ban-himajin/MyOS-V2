@@ -13,4 +13,9 @@ void* __attribute__((section(".Ctext")))  SDMemory(size32_t size){
     return start_memory;
 }
 
+void __attribute__((section(".Ctext"))) align32(unsigned int size){
+    end_memory = end_memory + (end_memory - (end_memory%size))
+    return ;
+}
+
 #endif
