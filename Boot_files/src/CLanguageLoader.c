@@ -1,4 +1,4 @@
-#include "../Library/VGA_Driver/VGA_Driver_v1.h"
+#include "../Library/VGA_Driver/VGA_Driver.h"
 #include "../Library/std/num_type/num_type.h"
 #include "../Library/std/Simple_Dynamic_Memory/Simple_Dynamic_Memory.h"
 
