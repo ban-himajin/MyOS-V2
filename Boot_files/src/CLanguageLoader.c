@@ -1,6 +1,6 @@
-#include "../Library/VGA_Driver/VGA_Driver.h"
-#include "../Library/std/num_type/num_type.h"
-#include "../Library/std/Simple_Dynamic_Memory/Simple_Dynamic_Memory.h"
+#include "../32bit_Library/VGA_Driver/VGA_Driver.h"
+#include "../32bit_Library/std/num_type/num_type.h"
+#include "../32bit_Library/std/Simple_Dynamic_Memory/Simple_Dynamic_Memory.h"
 
 void __attribute__((section(".Ctext"))) C_loader_main(void){
     uint8 VGA_x = 0;
