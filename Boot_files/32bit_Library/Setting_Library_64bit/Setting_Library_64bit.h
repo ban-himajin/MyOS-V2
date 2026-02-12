@@ -27,37 +27,41 @@
 #include "../std/Simple_Dynamic_Memory/Simple_Dynamic_Memory.h"
 
 typedef struct{
-    unsigned char page_flag;
-    unsigned int map_mem;
+    unsigned short page_flag : 12;
+    unsigned long long map_mem;
+    unsigned short index_num : 9;
 }PT;
 
 typedef struct{
-    unsigned char page_flag;
-    unsigned int map_mem;
-    unsigned short PT_size;
+    unsigned short page_flag : 12;
+    unsigned long long map_mem;
+    unsigned short index_num : 9;
+    unsigned short PT_size : 9;
     PT* PT_data;
 }PD;
 
 typedef struct{
-    unsigned char page_flag;
-    unsigned int map_mem;
-    unsigned short PD_size;
+    unsigned short page_flag : 12;
+    unsigned long long map_mem;
+    unsigned short index_num : 9;
+    unsigned short PD_size : 9;
     PD* PD_data;
 }PDPT;
 
 typedef struct{
-    unsigned char page_flag;
-    unsigned int map_mem;
+    unsigned short page_flag : 12;
+    unsigned long long map_mem : 52;
+    unsigned short index_num : 9;
     unsigned short PDPT_size;
     PDPT* PDPT_data;
 }PML4;
 
 typedef struct{
-    unsigned short PML4_size;
+    unsigned short PML4_size : 9;
     PML4* PML4_data;
 }Page_Table;
 
-void* __attribute__((section(".Ctext"))) page_table_data(const unsigned short PML4_size,const unsigned short PDPT_size,const unsigned short PD_size,const unsigned short PT_size){
+void* __attribute__((section(".Ctext"))) page_table_data(const unsigned short PML4_size, const unsigned short PDPT_size, const unsigned short PD_size, const unsigned short PT_size){
     Page_Table* page_data = SDMemory(sizeof(Page_Table));
     page_data->PML4_data = SDMemory(sizeof(PML4) * PML4_size);
     for(int i = 0; i < PML4_size; i++){
@@ -69,43 +73,82 @@ void* __attribute__((section(".Ctext"))) page_table_data(const unsigned short PM
             }
         }
     }
-    return (void*)page_data;
+    return page_data;
 }
 
-int __attribute__((section(".Ctext"))) PML4_set_map_mem(PML4* pages, const unsigned int mems, const unsigned char flag){
+int __attribute__((section(".Ctext"))) PML4_set_map_mem(PML4* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
     if(mems % (unsigned long long)(512*(unsigned long long)(512*GBYTE)) == 0){
         pages->map_mem = mems;
         pages->page_flag = flag;
+        pages->index_num = index;
         return 0;
     }
     return 1;
 }
 
-int __attribute__((section(".Ctext"))) PDPT_set_map_mem(PDPT* pages, const unsigned int mems, const unsigned char flag){
+int __attribute__((section(".Ctext"))) PDPT_set_map_mem(PDPT* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
     if(mems % (unsigned long long)(512*GBYTE) == 0){
         pages->map_mem = mems;
         pages->page_flag = flag;
+        pages->index_num = index;
         return 0;
     }
     return 1;
 }
 
-int __attribute__((section(".Ctext"))) PD_set_map_mem(PD* pages, const unsigned int mems, const unsigned char flag){
+int __attribute__((section(".Ctext"))) PD_set_map_mem(PD* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
     if(mems % (unsigned long long)(512*(unsigned long long)(2*MBYTE)) == 0){
         pages->map_mem = mems;
         pages->page_flag = flag;
+        pages->index_num = index;
         return 0;
     }
     return 1;
 }
 
-int __attribute__((section(".Ctext"))) PT_set_map_mem(PT* pages, const unsigned int mems, const unsigned char flag){
+int __attribute__((section(".Ctext"))) PT_set_map_mem(PT* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
     if(mems % (unsigned long long)(512*(unsigned long long)(4*KBYTE)) == 0){
         pages->map_mem = mems;
         pages->page_flag = flag;
+        pages->index_num = index;
         return 0;
     }
     return 1;
+}
+
+unsigned long long* __attribute__((section(".Ctext"))) make_page_data(const Page_Table* page_data, const unsigned int align_size){
+    //char* start_memory = end_memory;
+    unsigned int* PML4_start = align32(align_size);
+    unsigned long long* page_table = SDMemory(sizeof(unsigned long long) * 512);
+    for(int i = 0;i < page_data->PML4_size;i++){
+        if(page_data->PML4_data[i].PDPT_size == 0){
+            page_table[page_data->PML4_data[i].index_num] = ((page_data->PML4_data[i].map_mem << 12) | page_data->PML4_data[i].page_flag);
+            continue;
+        }else{
+            page_table[page_data->PML4_data[i].index_num] = (((unsigned long long)SDMemory(sizeof(unsigned long long) * 512) << 12) | page_data->PML4_data[i].page_flag);
+        }
+        for(int j = 0; j < page_data->PML4_data[i].PDPT_size;j++){
+            if(page_data->PML4_data[i].PDPT_data[j].PD_size == 0){
+                page_table[page_data->PML4_data[i].PDPT_data[j].index_num] = ((page_data->PML4_data[i].PDPT_data[j].map_mem << 12) | page_data->PML4_data[i].PDPT_data[j].page_flag);
+                continue;
+            }else{
+                page_table[page_data->PML4_data[i].PDPT_data[j].index_num] = (((unsigned long long)SDMemory(sizeof(unsigned long long) * 512) << 12) | page_data->PML4_data[i].PDPT_data[j].page_flag);
+            }
+            for(int k = 0; k < page_data->PML4_data[i].PDPT_data[j].PD_size;k++){
+                if(page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_size == 0){
+                    page_table[page_data->PML4_data[i].PDPT_data[j].PD_data[k].index_num] = ((page_data->PML4_data[i].PDPT_data[j].PD_data[k].map_mem << 12) | page_data->PML4_data[i].PDPT_data[j].PD_data[k].page_flag);
+                    continue;
+                }else{
+                    page_table[page_data->PML4_data[i].PDPT_data[j].PD_data[k].index_num] = (((unsigned long long)SDMemory(sizeof(unsigned long long) * 512) << 12) | page_data->PML4_data[i].PDPT_data[j].PD_data[k].page_flag);
+                }
+                for(int n = 0; n < page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_size;n++){
+                    page_table[page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_data[n].index_num] = ((page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_data[n].map_mem << 12) | page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_data[n].page_flag);
+                }
+            }
+        }
+    }
+
+    return page_table;
 }
 
 #endif
