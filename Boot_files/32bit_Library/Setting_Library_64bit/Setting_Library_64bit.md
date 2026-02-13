@@ -37,11 +37,12 @@
 |Page_Table|<details><summary>メンバ数(2)</summary>1.unsigned short PML4_size;<br>2.PML4* PML4_data;</details>|`typedef struct{unsigned short PML4_size;PML4* PML4_data;}Page_Table;`|
 
 # 関数
-|関数名|引数|コード|
-|-----|-----|-----|
-|page_table_data|<details><summary>引数の数(4)</summary>1.const unsigned short PML4_size<br>2.const unsigned short PDPT_size<br>3.const unsigned short PD_size<br>4.const unsigned short PT_size</details>|<details><summary>コード</summary>`void* __attribute__((section(".Ctext"))) page_table_data(const unsigned short PML4_size,const unsigned short PDPT_size,const unsigned short PD_size,const unsigned short PT_size){Page_Table* page_data = SDMemory(sizeof(Page_Table));page_data->PML4_data = SDMemory(sizeof(PML4) * PML4_size);for(int i = 0; i < PML4_size; i++){page_data->PML4_data[i].PDPT_data = SDMemory(sizeof(PDPT) * PDPT_size);for(int j = 0; j < PDPT_size; j++){page_data->PML4_data[i].PDPT_data[j].PD_data = SDMemory(sizeof(PD) * PD_size);for(int k = 0; k < PT_size; k++){page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_data = SDMemory(sizeof(PT) * PT_size);}}}return (void*)page_data;}`</details>|
-|PML4_set_map_mem|<details><summary>引数の数(3)</summary>1.PML4* pages<br>2.const unsigned int mems<br>3.const unsigned char flag</details>|<details><summary>コード</summary>`int __attribute__((section(".Ctext"))) PML4_set_map_mem(PML4* pages, const unsigned int mems, const unsigned char flag){if(mems % (unsigned long long)(512*(unsigned long long)(512*GBYTE)) == 0){pages->map_mem = mems;pages->page_flag = flag;return 0;}return 1;}`</details>|
-|PDPT_set_map_mem|<details><summary>引数の数(3)</summary>1.PDPT* pages<br>2.const unsigned int mems<br>3.const unsigned char flag</details>|<details><summary>コード</summary>`int __attribute__((section(".Ctext"))) PDPT_set_map_mem(PDPT* pages, const unsigned int mems, const unsigned char flag){if(mems % (unsigned long long)(512*GBYTE) == 0){pages->map_mem = mems;pages->page_flag = flag;return 0;}return 1;}`</details>|
-|PD_set_map_mem|<details><summary>引数の数(3)</summary>1.PD* pages<br>2.const unsigned int mems<br>3.const unsigned char flag</details>|<details><summary>コード</summary>`int __attribute__((section(".Ctext"))) PD_set_map_mem(PD* pages, const unsigned int mems, const unsigned char flag){if(mems % (unsigned long long)(512*(unsigned long long)(2*MBYTE)) == 0){pages->map_mem = mems;pages->page_flag = flag;return 0;}return 1;}`</details>|
-|PT_set_map_mem|<details><summary>引数の数(3)</summary>1.PT* pages<br>2.const unsigned int mems<br>3.const unsigned char flag</details>|<details><summary>コード</summary>`int __attribute__((section(".Ctext"))) PT_set_map_mem(PT* pages, const unsigned int mems, const unsigned char flag){if(mems % (unsigned long long)(512*(unsigned long long)(4*KBYTE)) == 0){pages->map_mem = mems;pages->page_flag = flag;return 0;}return 1;}`</details>|
+|関数名|引数|
+|-----|-----|
+|page_table_data|<details><summary>引数の数(4)</summary>1.const unsigned short PML4_size<br>2.const unsigned short PDPT_size<br>3.const unsigned short PD_size<br>4.const unsigned short PT_size</details>|
+|PML4_set_map_mem|<details><summary>引数の数(3)</summary>1.PML4* pages<br>2.const unsigned int mems<br>3.const unsigned char flag</details>|
+|PDPT_set_map_mem|<details><summary>引数の数(3)</summary>1.PDPT* pages<br>2.const unsigned int mems<br>3.const unsigned char flag</details>|
+|PD_set_map_mem|<details><summary>引数の数(3)</summary>1.PD* pages<br>2.const unsigned int mems<br>3.const unsigned char flag</details>|
+|PT_set_map_mem|<details><summary>引数の数(3)</summary>1.PT* pages<br>2.const unsigned int mems<br>3.const unsigned char flag</details>|
+|make_page_data|<details><summary>引数の数(1)</summary>1.Page_Table*</details>|
 
