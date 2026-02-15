@@ -22,13 +22,12 @@ SECTIONS
         *(.text32)
         *(.text32.*)
     }
-
-    .Ctext :
+    
+    .text :
     {
-        *(.Ctext)
-        *(.Ctext.*)
+        *(.text)
+        *(.text.*)
     }
-
     .data32 :
     {
         *(.data32)
