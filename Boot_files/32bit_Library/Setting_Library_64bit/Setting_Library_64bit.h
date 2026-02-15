@@ -61,7 +61,7 @@ typedef struct{
     PML4* PML4_data;
 }Page_Table;
 
-void* __attribute__((section(".Ctext"))) page_table_data(const unsigned short PML4_size, const unsigned short PDPT_size, const unsigned short PD_size, const unsigned short PT_size){
+void* page_table_data(const unsigned short PML4_size, const unsigned short PDPT_size, const unsigned short PD_size, const unsigned short PT_size){
     Page_Table* page_data = SDMemory(sizeof(Page_Table));
     page_data->PML4_data = SDMemory(sizeof(PML4) * PML4_size);
     page_data->PML4_size = PML4_size;
@@ -80,7 +80,7 @@ void* __attribute__((section(".Ctext"))) page_table_data(const unsigned short PM
     return page_data;
 }
 
-int __attribute__((section(".Ctext"))) PML4_set_map_mem(PML4* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
+int PML4_set_map_mem(PML4* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
     if(mems % (unsigned long long)(512*(unsigned long long)(512*GBYTE)) == 0){
         pages->map_mem = mems;
         pages->page_flag = flag;
@@ -90,7 +90,7 @@ int __attribute__((section(".Ctext"))) PML4_set_map_mem(PML4* pages, const unsig
     return 1;
 }
 
-int __attribute__((section(".Ctext"))) PDPT_set_map_mem(PDPT* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
+int PDPT_set_map_mem(PDPT* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
     if(mems % (unsigned long long)(512*GBYTE) == 0){
         pages->map_mem = mems;
         pages->page_flag = flag;
@@ -100,7 +100,7 @@ int __attribute__((section(".Ctext"))) PDPT_set_map_mem(PDPT* pages, const unsig
     return 1;
 }
 
-int __attribute__((section(".Ctext"))) PD_set_map_mem(PD* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
+int PD_set_map_mem(PD* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
     if(mems % (unsigned long long)(512*(unsigned long long)(2*MBYTE)) == 0){
         pages->map_mem = mems;
         pages->page_flag = flag;
@@ -110,7 +110,7 @@ int __attribute__((section(".Ctext"))) PD_set_map_mem(PD* pages, const unsigned 
     return 1;
 }
 
-int __attribute__((section(".Ctext"))) PT_set_map_mem(PT* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
+int PT_set_map_mem(PT* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
     if(mems % (unsigned long long)(512*(unsigned long long)(4*KBYTE)) == 0){
         pages->map_mem = mems;
         pages->page_flag = flag;
@@ -120,7 +120,7 @@ int __attribute__((section(".Ctext"))) PT_set_map_mem(PT* pages, const unsigned 
     return 1;
 }
 
-unsigned long long* __attribute__((section(".Ctext"))) make_page_data(const Page_Table* page_data){
+unsigned long long* make_page_data(const Page_Table* page_data){
     unsigned int* PML4_start = align32(4 * KBYTE);
     if(page_data->PML4_size == 0) return 0;
     unsigned long long* page_table = SDMemory(sizeof(unsigned long long) * 512);
