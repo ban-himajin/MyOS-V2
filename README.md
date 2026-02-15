@@ -58,8 +58,8 @@ Kernel自体ができていないのでまた手を付けていません。
 - [ ] 64bitへ移行
 #### 32bit/CLanguage
 - [x] VGAを使った出力
-- [ ] ELFカーネルの解析
-- [ ] ページング用データの作成
+- [x] ELFカーネルの解析
+- [x] ページング用データの作成
 - [ ] 例外処理の作成
 #### 64bit/asm
 - [ ] 初期化
@@ -70,6 +70,8 @@ Kernel自体ができていないのでまた手を付けていません。
 |-------|--------|--------|
 |std|OS開発時に使う自作標準ライブラリ|[Std_Library_Folder](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/Library/std/std.md)|
 |VGA_Driver|ブートローダーで使うVGA出力をする最低限のドライバ|[VGA_Driver.md](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/Library/VGA_Driver/VGA_Driver.md)|
+|ELF_Analysis|ELF解析を主とするライブラリ|[ELF_Analysis.md](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/32bit_Library/ELF_Analysis/ELF_Analysis.md)|
+|Setting_Library_64bit|64bitに移行するために必要なデータ作成ライブラリ|[Setting_Library_64bit.md](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/32bit_Library/Setting_Library_64bit/Setting_Library_64bit.md)|
 
 ### 5.コードのコンパイル、アセンブルについて
 現状コードのコンパイル、アセンブル、結合については公開できるものの  
