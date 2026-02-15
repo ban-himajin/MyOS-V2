@@ -33,6 +33,11 @@
 |Yellow|14|黄色|
 |LightWhite|15|白|
 
+## 型
+|型名|コード|
+|-----|-----|
+|VGA_data|<details><summary>コード</summary>`typedef struct{<br>unsigned short *VGA;<br>char x;char y;}VGA_data;`</details>
+
 ## 関数
 |関数名|引数内容|戻り値|詳細|
 |-----|-----|-----|-----|
