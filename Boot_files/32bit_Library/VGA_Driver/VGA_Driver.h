@@ -25,29 +25,47 @@
 #define LightWhite 15
 //--------------------
 
-unsigned short*  __attribute__((section(".Ctext"))) get_vga_memory(){//VGA Memory get function
+typedef struct{
+    unsigned short *VGA;
+    char x;
+    char y;
+}VGA_data;
+
+unsigned short* get_vga_memory(){//VGA Memory get function
     return (unsigned short*)VGA_START_MEMORY;
 }
 
-int __attribute__((section(".Ctext"))) set_vga(unsigned short **VGA, const unsigned char VGA_x, const unsigned char VGA_y){//VGA memory set X,Y
-    *VGA = (unsigned short*)VGA_START_MEMORY + (VGA_y * VGA_WIDTH + VGA_x);
+int set_vga(VGA_data *VGA){//VGA memory set X,Y
+    VGA->VGA = (unsigned short*)VGA_START_MEMORY + (VGA->y * VGA_WIDTH + VGA->x);
     return 0;
 }
 
-int  __attribute__((section(".Ctext"))) write_vga_text(unsigned short **VGA, const unsigned char text, const unsigned char color){//VGA write text
-    **VGA = (unsigned short)((color << 8) | (text));
-    (*VGA)+=1;
+int write_vga_text(VGA_data *VGA, const unsigned char text, const unsigned char color){//VGA write text
+    *(VGA->VGA) = (unsigned short)((color << 8) | (text));
+    VGA->VGA++;
+    if(VGA->x > VGA_WIDTH){
+        VGA->y++;
+        VGA->x = 0;
+    }
+    else VGA->x++;
     return 0;
 }
 
-int  __attribute__((section(".Ctext"))) write_vga_texts(unsigned short **VGA, const char* text, const unsigned char color){//VGA write texts
+int write_vga_texts(VGA_data *VGA, const char* text, const unsigned char color){//VGA write texts
     unsigned int count;
-    for(count = 0;text[count] != '\0';count++)write_vga_text(VGA, text[count], color);
+    for(count = 0;text[count] != '\0';count++){
+        if(text[count] == '\n'){
+            VGA->y++;
+            VGA->x = 0;
+            set_vga(VGA);
+        }
+        else write_vga_text(VGA, text[count], color);
+    }
     return 0;
 }
 
-int  __attribute__((section(".Ctext"))) clean_screen (const unsigned char offset_text, const unsigned char offset_color){//crean screen texts
-    unsigned short *VGA = (unsigned short*)VGA_START_MEMORY;
+int clean_screen (const unsigned char offset_text, const unsigned char offset_color){//crean screen texts
+    VGA_data VGA = {(unsigned short*)VGA_START_MEMORY};
     int loop_count;
     for(loop_count = 0;loop_count < (VGA_HEIGHT * VGA_WIDTH);loop_count++)write_vga_text(&VGA, offset_text, offset_color);
     return 0;
