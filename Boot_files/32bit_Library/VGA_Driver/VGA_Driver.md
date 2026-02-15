@@ -1,6 +1,6 @@
 # VGA_Driverライブラリの詳細
 現在までで開発ができている関数や定義の詳細です。  
-[実際のコード](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/Library/VGA_Driver/VGA_Driver_v1.h)
+[実際のコード](https://github.com/ban-himajin/MyOS-V2/blob/ELF_Analysis_Library/Boot_files/32bit_Library/VGA_Driver/VGA_Driver.h)
 
 ## 定義
 ### データ定義&定義関数
