@@ -41,10 +41,10 @@
 ## 関数
 |関数名|引数内容|戻り値|詳細|
 |-----|-----|-----|-----|
-|get_vga_memory|<details><summary>引数の数(0)</summary></details>|VGAメモリ位置(0xb8000)[固定]|<details><summary>詳細</summary>- 内容:VGAメモリ位置を返す<br>- 使用例:`unsigned short* VGA = get_vga_memory();`<br>- 関数設計:`get_vga_memory()`</datails>|
-|set_vga|<details><summary>引数の数(3)</summary>1.VGAポインタのアドレス<br>2.VGA_s<br>3.VGA_y|0[固定]|<details><summary>詳細</summary>- 内容:x,yをもとにVGAを移動<br>- 使用例:`set_vga(&VGA,VGA_x,VGA_y);`<br>- 関数設計:`set_vga(unsigned short **VGA, const unsigned char VGA_x, const unsigned char VGA_y)`</datails>|
-|write_vga_text|<details><summary>引数の数(3)</summary>-VGAのポインタアドレス<br>- 単文字<br>- 文字色&背景色|0[固定]|<details><summary>詳細</summary>- 内容:短文字の出力<br>- 使用例:`write_vga_text(&VGA, 'A', COLLAR(Black, White));`<br>- 関数設計:`write_vga_text(unsigned short **VGA, const unsigned char text, const unsigned char collar)`</details>|
-|write_vga_texts|<details><summary>引数の数(3)</summary>-VGAのポインタアドレス<br>- 文字列<br>- 文字色&背景色</details>|0[固定]|<details><summary>詳細</summary>- 内容:短文字の出力<br>- 使用例:`write_vga_text(&VGA, "Hello World", COLLAR(Black, White));`<br>- 関数設計:`write_vga_text(unsigned short **VGA, const unsigned char text[], const unsigned char collar)`</details>|
-|clean_screan|<details><summary>引数の数(2)</summary>- 開始位置<br>- 文字色&背景色</details>|0[固定]|<details><summary>詳細</summary>- 内容:指定の位置から最後までを指定の文字,色で埋める<br>- 使用例:`clean_screen(' ', COLLAR(Red,Black));`<br>- 関数設計:`clean_screen (const unsigned char offset_text, const unsigned char offset_collar)`</details>|
+|get_vga_memory|<details><summary>引数の数(0)</summary></details>|VGAメモリ位置(0xb8000)[固定]|<details><summary>詳細</summary>- 内容:VGAメモリ位置を返す<br>- 使用例:`unsigned short* VGA = get_vga_memory();`</datails>|
+|set_vga|<details><summary>引数の数(3)</summary>1.VGAポインタのアドレス<br>2.VGA_s<br>3.VGA_y|0[固定]|<details><summary>詳細</summary>- 内容:x,yをもとにVGAを移動<br>- 使用例:`set_vga(&VGA,VGA_x,VGA_y);`</datails>|
+|write_vga_text|<details><summary>引数の数(3)</summary>-VGAのポインタアドレス<br>- 単文字<br>- 文字色&背景色|0[固定]|<details><summary>詳細</summary>- 内容:短文字の出力<br>- 使用例:`write_vga_text(&VGA, 'A', COLLAR(Black, White));`</details>|
+|write_vga_texts|<details><summary>引数の数(3)</summary>-VGAのポインタアドレス<br>- 文字列<br>- 文字色&背景色</details>|0[固定]|<details><summary>詳細</summary>- 内容:短文字の出力<br>- 使用例:`write_vga_text(&VGA, "Hello World", COLLAR(Black, White));`</details>|
+|clean_screan|<details><summary>引数の数(2)</summary>- 開始位置<br>- 文字色&背景色</details>|0[固定]|<details><summary>詳細</summary>- 内容:指定の位置から最後までを指定の文字,色で埋める<br>- 使用例:`clean_screen(' ', COLLAR(Red,Black));`</details>|
 
 
