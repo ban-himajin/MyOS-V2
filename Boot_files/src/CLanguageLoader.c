@@ -2,6 +2,7 @@
 #include "../32bit_Library/std/num_type/num_type.h"
 #include "../32bit_Library/std/Simple_Dynamic_Memory/Simple_Dynamic_Memory.h"
 #include "../32bit_Library/Setting_Library_64bit/Setting_Library_64bit.h"
+#include "../32bit_Library/ELF_Analysis/ELF_Analysis.h"
 
 typedef struct{
     uint16 GS;
