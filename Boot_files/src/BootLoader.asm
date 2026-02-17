@@ -37,6 +37,23 @@ DAP:
     dw 0;Segment
     dq 0;StartoSecterNum
 
+VBE_mode_info:
+    dw 0
+
+VBE_mode:
+    dw 0
+
+VBE_mode_flag:
+    dw 0
+
+VBE_datas:
+    dd 0;x
+    dd 0;y
+    dd 0;BitsPerPixel
+    dd 0;BytesPerScanLine
+    dd 0;MemoryMode
+    dd 0;PhysBasePtr
+
 ;-------16bitMode--------
 [Bits 16]
 ;16BitSections
@@ -84,13 +101,105 @@ start_16bit:
 
     sti
     call enable_a20_fast
+    call check_LFB
+    mov eax, [VBE_datas + 5 * 4]
+    cmp eax, 0
+    je .not_vge
     call load_kernel
     jmp setup_protect_mode
     
+.not_vge:
+    mov ah, 0x0E    ; BIOS テレタイプ出力
+    mov al, 'T'     ; 表示したい文字
+    mov bh, 0x00    ; ページ番号（通常 0）
+    mov bl, 0x07    ; 文字色（白・黒背景、テキストモード時）
+    int 0x10
+    hlt
+    jmp .not_vge
+
 enable_a20_fast:;A20 balid func
     in  al, 0x92
     or  al, 0x02
     out 0x92,al
+    ret
+
+check_LFB:
+    xor ax, ax
+    mov es, ax
+    mov di, VBE_mode_info
+    mov cx, 0x00
+    mov ax, 0x4f01
+    int 0x10
+    mov di, VBE_mode_info
+    mov ax, [di]
+    test ax, 0x0080
+    je .change_LFB
+    ret
+
+.change_LFB:
+    xor ax, ax
+    mov bx, ax
+    ;mov dword[VBE_mode], 0x0118
+    mov dword[VBE_mode], 0x010F
+    ;mov dword[VBE_mode_flag], 0x8000
+    mov dword[VBE_mode_flag], 0x4000
+    mov bx, word[VBE_mode]
+    or bx, word[VBE_mode_flag]
+    mov ax, 0x4f02
+    int 0x10
+    cmp ax, 0x004f
+    je .get_VBE_data
+    ret
+
+.get_VBE_data:
+    ;Xsize
+    xor ax, ax
+    mov es, ax
+    mov di, VBE_datas + 0
+    mov cx, 0x16
+    mov ax, 0x4f01
+    int 0x10
+    
+    ;Ysize
+    xor ax, ax
+    mov es, ax
+    mov di, VBE_datas + 4
+    mov cx, 0x17
+    mov ax, 0x4f01
+    int 0x10
+
+    ;BitsPerPixel
+    xor ax, ax
+    mov es, ax
+    mov di, VBE_datas + 8
+    mov cx, 0x19
+    mov ax, 0x4f01
+    int 0x10
+
+    ;BytesPerScanLine
+    xor ax, ax
+    mov es, ax
+    mov di, VBE_datas + 12
+    mov cx, 0x10
+    mov ax, 0x4f01
+    int 0x10
+
+    ;MemoryMode
+    xor ax, ax
+    mov es, ax
+    mov di, VBE_datas + 16
+    mov cx, 0x1b
+    mov ax, 0x4f01
+    int 0x10
+
+    ;PhysBasePtr
+    xor ax, ax
+    mov es, ax
+    mov di, VBE_datas + 20
+    mov cx, 0x28
+    mov ax, 0x4f01
+    int 0x10
+
     ret
 
 DAPset:;DBPLabelUseSet
@@ -168,6 +277,8 @@ setup_protect_mode:
 
 ;------------------------------------------
 section .data32
+kernel_data:
+    dd ((Kernel_SECTOR_SEGMENT * 16) + Kernel_SECTOR_OFFSET)
 idt_32bit:
     times 256 * 8 db 0
 idt_ptr_32bit:
@@ -183,7 +294,6 @@ PIC2_IRQ_mask_data:
 section .text32
 start_32bit:
     extern C_loader_main
-    cli
     mov ax, 0x10
     mov ds, ax
     mov es, ax
@@ -195,7 +305,11 @@ start_32bit:
     call set_idt_32bit
     call set_irq_32bit
     sti
+    push VBE_datas
+    push kernel_data
     call C_loader_main
+    add esp, 4
+    add esp, 24
 
     jmp $
 
@@ -254,51 +368,53 @@ set_idt_32bit:
 ;--------isr_set_field-----------
 global isr0_32bit
 isr0_32bit:
-    push dword 0
-    push dword 0
+    push dword 0x00
+    push dword 0x00
     jmp isr_common
 
 global isr5_32bit
 isr5_32bit:
-    push dword 0
-    push dword 5
+    push dword 0x00
+    push dword 0x05
     jmp isr_common
 
 global isr6_32bit
 isr6_32bit:
-    push dword 0
-    push dword 6
+    push dword 0x00
+    push dword 0x06
     jmp isr_common
 
 global isr8_32bit
 isr8_32bit:
-    push dword 8
+    ;push dword 0x08
+    hlt
+    jmp isr0_32bit
     jmp isr_common
 
 global isr11_32bit
 isr11_32bit:
-    push dword 11
+    push dword 0x0b
     jmp isr_common
 
 global isr12_32bit
 isr12_32bit:
-    push dword 12
+    push dword 0xc
     jmp isr_common
 
 global isr13_32bit
 isr13_32bit:
-    ;push dword 13
+    push dword 0x0d
     jmp isr_common
 
 global isr14_32bit
 isr14_32bit:
-    push dword 14
+    push dword 0x0e
     jmp isr_common
 
 global isr16_32bit
 isr16_32bit:
     push dword 0
-    push dword 16
+    push dword 0x10
     jmp isr_common
 
 
@@ -307,7 +423,6 @@ isr16_32bit:
 ;global isr_common
 extern isr_C_function
 isr_common:
-    ;jmp $
     cli
     pusha
 
@@ -328,6 +443,7 @@ isr_common:
     pop fs
     pop es
     pop ds
+
     popa
     add esp, 4
     sti
