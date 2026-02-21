@@ -38,7 +38,7 @@ DAP:
     dq 0;StartoSecterNum
 
 VBE_mode_info:
-    dw 0
+    times 512 db 0
 
 VBE_mode:
     dw 0
@@ -47,11 +47,19 @@ VBE_mode_flag:
     dw 0
 
 VBE_datas:
-    dd 0;x
-    dd 0;y
-    dd 0;BitsPerPixel
-    dd 0;BytesPerScanLine
-    dd 0;MemoryMode
+    ;dd 0;x
+    ;db 0;x
+    dw 0;x
+    ;dd 0;y
+    ;db 0;y
+    dw 0;y
+    ;dd 0;BitsPerPixel
+    db 0;BitsPerPixel
+    ;dd 0;BytesPerScanLine
+    dw 0;BytesPerScanLine
+    ;dd 0;MemoryMode
+    db 0;MemoryMode
+    ;dd 0;PhysBasePtr
     dd 0;PhysBasePtr
 
 ;-------16bitMode--------
@@ -102,10 +110,7 @@ start_16bit:
     sti
     call enable_a20_fast
     call check_LFB
-    mov eax, [VBE_datas + 5 * 4]
-    cmp eax, 0
-    je .not_vge
-    call load_kernel
+    ;call load_kernel
     jmp setup_protect_mode
     
 .not_vge:
@@ -125,80 +130,72 @@ enable_a20_fast:;A20 balid func
 
 check_LFB:
     xor ax, ax
+    mov ax, ds
     mov es, ax
     mov di, VBE_mode_info
-    mov cx, 0x00
+    mov dword[VBE_mode], 0x0118
+    ;mov ax, VBE_mode_info
+    ;mov [es:di], ax
+    mov word[VBE_mode], 0x118
+    mov cx, word[VBE_mode]
     mov ax, 0x4f01
     int 0x10
-    mov di, VBE_mode_info
-    mov ax, [di]
+    ;jmp $
+    mov ax, word[VBE_mode_info]
     test ax, 0x0080
-    je .change_LFB
+    jne .change_LFB
+    mov ah, 0x0E    ; BIOS テレタイプ出力
+    mov al, 'I'     ; 表示したい文字
+    mov bh, 0x00    ; ページ番号（通常 0）
+    mov bl, 0x07    ; 文字色（白・黒背景、テキストモード時）
+    int 0x10
     ret
 
 .change_LFB:
     xor ax, ax
     mov bx, ax
-    ;mov dword[VBE_mode], 0x0118
-    mov dword[VBE_mode], 0x010F
-    ;mov dword[VBE_mode_flag], 0x8000
-    mov dword[VBE_mode_flag], 0x4000
+    mov word[VBE_mode_flag], 0x4000
     mov bx, word[VBE_mode]
     or bx, word[VBE_mode_flag]
     mov ax, 0x4f02
     int 0x10
     cmp ax, 0x004f
     je .get_VBE_data
+    mov ah, 0x0E    ; BIOS テレタイプ出力
+    mov al, 'P'     ; 表示したい文字
+    mov bh, 0x00    ; ページ番号（通常 0）
+    mov bl, 0x07    ; 文字色（白・黒背景、テキストモード時）
+    int 0x10
     ret
 
 .get_VBE_data:
     ;Xsize
-    xor ax, ax
-    mov es, ax
-    mov di, VBE_datas + 0
-    mov cx, 0x16
-    mov ax, 0x4f01
-    int 0x10
+    mov ax, word[VBE_mode_info + 0x12]
+    mov [VBE_datas], ax
     
     ;Ysize
-    xor ax, ax
-    mov es, ax
-    mov di, VBE_datas + 4
-    mov cx, 0x17
-    mov ax, 0x4f01
-    int 0x10
+    mov ax, word[VBE_mode_info + 0x14]
+    mov [VBE_datas + 2], ax
 
     ;BitsPerPixel
-    xor ax, ax
-    mov es, ax
-    mov di, VBE_datas + 8
-    mov cx, 0x19
-    mov ax, 0x4f01
-    int 0x10
+    mov al, byte[VBE_mode_info + 0x19]
+    mov [VBE_datas + 4], al
 
     ;BytesPerScanLine
-    xor ax, ax
-    mov es, ax
-    mov di, VBE_datas + 12
-    mov cx, 0x10
-    mov ax, 0x4f01
-    int 0x10
+    mov ax, word[VBE_mode_info + 0x10]
+    mov [VBE_datas + 5], ax
 
     ;MemoryMode
-    xor ax, ax
-    mov es, ax
-    mov di, VBE_datas + 16
-    mov cx, 0x1b
-    mov ax, 0x4f01
-    int 0x10
+    mov al, byte[VBE_mode_info + 0x1b]
+    mov [VBE_datas + 7], al
 
     ;PhysBasePtr
-    xor ax, ax
-    mov es, ax
-    mov di, VBE_datas + 20
-    mov cx, 0x28
-    mov ax, 0x4f01
-    int 0x10
+    cli
+    mov eax, dword[VBE_mode_info + 0x28]
+    mov [VBE_datas + 8], eax
+    
+    mov ax, VBE_datas
+    mov [0x500], ax
 
     ret
 
@@ -304,10 +301,10 @@ start_32bit:
     mov ebp, esp
     call set_idt_32bit
     call set_irq_32bit
-    sti
     push VBE_datas
     push kernel_data
     call C_loader_main
+    sti
     add esp, 4
     add esp, 24
 
