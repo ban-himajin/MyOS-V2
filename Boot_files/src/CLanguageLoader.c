@@ -1,8 +1,10 @@
-#include "../32bit_Library/VGA_Driver/VGA_Driver.h"
+//#include "../32bit_Library/VGA_Driver/VGA_Driver.h"
 #include "../32bit_Library/std/num_type/num_type.h"
 #include "../32bit_Library/std/Simple_Dynamic_Memory/Simple_Dynamic_Memory.h"
 #include "../32bit_Library/Setting_Library_64bit/Setting_Library_64bit.h"
 #include "../32bit_Library/ELF_Analysis/ELF_Analysis.h"
+#include "../32bit_Library/VBE_Operation/VBE_Operation.h"
+#include "../32bit_Library/std/stdlib/stdlib.h"
 
 typedef struct{
     uint16 GS;
@@ -23,11 +25,8 @@ typedef struct{
     uint16 error_code;
 }isr_list;
 
-void C_loader_main(const unsigned char* kernel_mem){
-    VGA_data VGA = {get_vga_memory(), 0, 0};
-    clean_screen(' ', COLOR(Black,Black));
-    write_vga_text(&VGA, 'A', COLOR(Black, White));
-    write_vga_texts(&VGA,"\nhello world", COLOR(Black, White));
+void C_loader_main(const unsigned char* kernel_mem, VBE_data* VBE){
+    fill_screen(VBE, 0x000040);
     while(1);
     return ;
 }
@@ -35,4 +34,9 @@ void C_loader_main(const unsigned char* kernel_mem){
 
 void isr_C_function(isr_list* isr_data){
     return ;
+}
+
+void err_screen(VBE_data* VBE){
+    fill_screen(VBE, 0x0000ff);
+    while(1);
 }
