@@ -385,7 +385,9 @@ global isr8_32bit
 isr8_32bit:
     ;push dword 0x08
     hlt
-    jmp isr0_32bit
+    cli
+    push VBE_datas
+    jmp isr8_32bit
     jmp isr_common
 
 global isr11_32bit
