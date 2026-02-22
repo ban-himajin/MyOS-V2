@@ -19,7 +19,7 @@ MBR自体は動作確認用の簡素なものはありますが機能が不十�
 ### VBR：進捗度0%
 VBRもMBR同様動作確認用の簡素なものはありますが機能が不十分なため満足いくものができ次第公開します。  
 
-### BootLoader：進捗度20%
+### BootLoader：進捗度80%
 ブートローダーについては現在16bitモードをはじめとして32bitへの移行をした地点まで開発しました。  
 今後は32bitからC言語へ移行しブートローダーを開発していきます。  
 [BootLoaderの詳細](https://github.com/ban-himajin/MyOS-V2/blob/main/README.md#bootloader%E3%81%AE%E8%A9%B3%E7%B4%B0)
@@ -60,6 +60,7 @@ Kernel自体ができていないのでまた手を付けていません。
 - [x] VGAを使った出力
 - [x] ELFカーネルの解析
 - [x] ページング用データの作成
+- [x] VBEを使った描画
 - [ ] 例外処理の作成
 #### 64bit/asm
 - [ ] 初期化
@@ -68,10 +69,11 @@ Kernel自体ができていないのでまた手を付けていません。
 ### 4.実装済み&実装予定ライブラリ
 |ライブラリ名|ライブラリ内容|ライブラリの詳細|
 |-------|--------|--------|
-|std|OS開発時に使う自作標準ライブラリ|[Std_Library_Folder](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/Library/std/std.md)|
+|std|OS開発時に使う自作標準ライブラリ|[Std_Library_Folder.md](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/Library/std/std.md)|
 |VGA_Driver|ブートローダーで使うVGA出力をする最低限のドライバ|[VGA_Driver.md](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/Library/VGA_Driver/VGA_Driver.md)|
 |ELF_Analysis|ELF解析を主とするライブラリ|[ELF_Analysis.md](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/32bit_Library/ELF_Analysis/ELF_Analysis.md)|
 |Setting_Library_64bit|64bitに移行するために必要なデータ作成ライブラリ|[Setting_Library_64bit.md](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/32bit_Library/Setting_Library_64bit/Setting_Library_64bit.md)|
+|VBE_Operation|VBEを使った描画をするライブラリ|[VBE_Operation.md](https://github.com/ban-himajin/MyOS-V2/blob/main/Boot_files/32bit_Library/VBE_Operation/VBE_Operation.md)|
 
 ### 5.コードのコンパイル、アセンブルについて
 現状コードのコンパイル、アセンブル、結合については公開できるものの  
