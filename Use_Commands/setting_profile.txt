@@ -1,8 +1,0 @@
-mode:pro
-use:MBR
-use:VBR
-set_binary:0
-MBR_file:D:\motikomi\OS-v2\BIOSBoot\MainBootFolder\src\BIOS\TestVBR.bin
-set_binary:512
-VBR_file:D:\motikomi\OS-v2\BIOSBoot\MainBootFolder\src\BIOS\BIOSLoader.bin
-pating:512
