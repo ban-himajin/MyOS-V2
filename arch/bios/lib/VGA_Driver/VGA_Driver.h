@@ -5,6 +5,7 @@
 #define VGA_HEIGHT 25
 #define VGA_WIDTH 80
 #define COLOR(bc, tc) ((bc<<4) | (tc))
+#define num_print(x) #x
 
 //-----ColorList-----
 #define Black 0

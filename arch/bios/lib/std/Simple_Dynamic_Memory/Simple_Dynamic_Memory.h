@@ -14,7 +14,8 @@ void* SDMemory(size32_t size){
 }
 
 void* align32(size32_t size){
-    end_memory = end_memory + ((unsigned int)end_memory - ((unsigned int)end_memory % size));
+    unsigned long long pad = ((unsigned int)end_memory % size);
+    if(pad != 0)end_memory = end_memory + (size - pad);
     return end_memory;
 }
 

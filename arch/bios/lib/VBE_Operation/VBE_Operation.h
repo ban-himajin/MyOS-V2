@@ -76,11 +76,6 @@ int write_draw_rect(const VBE_data *VBE, int x, int y, int w, int h, const unsig
 int write_fill_rect(const VBE_data *VBE, int x, int y, int w, int h, unsigned int color){
     if(x >= VBE->WIDTH || x+w >= VBE->WIDTH)return 1;
     if(y >= VBE->HEIGHT || y+h >= VBE->HEIGHT) return 2;
-    if(y > h){
-        int t = y;
-        y = h;
-        h = t;
-    }
     for(int i = 0;i < h;i++){
         write_line(VBE, x, y+i, x+w, y+i, color);
     }
