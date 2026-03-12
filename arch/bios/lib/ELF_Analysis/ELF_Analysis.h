@@ -9,15 +9,15 @@ typedef struct{
     unsigned long long e_phnum;
 }ELF_data;
 
-char ELF_check(const unsigned char* ELF_mem){
+static char ELF_check(const unsigned char* ELF_mem){
     if( ELF_mem[0] != 0x7f ||
         ELF_mem[1] != 'E' ||
         ELF_mem[2] != 'L' ||
-        ELF_mem[3] != 'F')return 0;
-    return -1;
+        ELF_mem[3] != 'F')return -1;
+    return 0;
 }
 
-unsigned long long get_entry(const unsigned char* ELF_mem){
+static unsigned long long get_entry(const unsigned char* ELF_mem){
     unsigned long long entry = 0;
     unsigned int offset = 24;
     for(int i = 0;i < 8; i++){
@@ -26,7 +26,7 @@ unsigned long long get_entry(const unsigned char* ELF_mem){
     return entry;
 }
 
-unsigned long long get_phoff(const unsigned char* ELF_mem){
+static unsigned long long get_phoff(const unsigned char* ELF_mem){
     unsigned long long phoff = 0;
     unsigned int offset = 32;
     for(int i = 0;i < 8; i++){
@@ -35,7 +35,7 @@ unsigned long long get_phoff(const unsigned char* ELF_mem){
     return phoff;
 }
 
-unsigned short get_phentsize(const unsigned char* ELF_mem){
+static unsigned short get_phentsize(const unsigned char* ELF_mem){
     unsigned short phentsize = 0;
     unsigned int offset = 54;
     for(int i = 0;i < 2; i++){
@@ -44,7 +44,7 @@ unsigned short get_phentsize(const unsigned char* ELF_mem){
     return phentsize;
 }
 
-unsigned short get_phnum(const unsigned char* ELF_mem){
+static unsigned short get_phnum(const unsigned char* ELF_mem){
     unsigned short phnum = 0;
     unsigned int offset = 56;
     for(int i = 0;i < 2; i++){

@@ -40,6 +40,18 @@ SECTIONS
         *(.data32.*)
     }
 
+    .text64 :
+    {
+        *(.text64)
+        *(.text64.*)
+    }
+
+    .data64 :
+    {
+        *(.data64)
+        *(.data64.*)
+    }
+
     .rodata :
     {
         *(.rodata)

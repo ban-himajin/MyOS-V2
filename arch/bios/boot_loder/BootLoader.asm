@@ -47,21 +47,31 @@ VBE_mode_flag:
     dw 0
 
 VBE_datas:
-    ;dd 0;x
-    ;db 0;x
     dw 0;x
-    ;dd 0;y
-    ;db 0;y
     dw 0;y
-    ;dd 0;BitsPerPixel
     db 0;BitsPerPixel
-    ;dd 0;BytesPerScanLine
     dw 0;BytesPerScanLine
-    ;dd 0;MemoryMode
     db 0;MemoryMode
-    ;dd 0;PhysBasePtr
     dd 0;PhysBasePtr
 
+ELF_datas:
+    dq 0    ;e_entry
+    dq 0    ;e_phoff
+    dq 0    ;e_phentsize
+    dq 0    ;e_phnum
+
+mem_map:
+    times (24 * 128) db 0
+
+mem_map_array_size:
+    dw 0
+
+mem_map_struct:
+    dw mem_map_array_size
+    dw mem_map
+
+bios_type:
+    db "BIOS"
 ;-------16bitMode--------
 [Bits 16]
 ;16BitSections
@@ -92,6 +102,9 @@ gdt32bit_end:
 gdt32bit_descriptor:
     dw gdt32bit_end - gdt32bit_start - 1
     dd gdt32bit_start
+
+loop_count:
+    db 0
 
 ;16BitMainText
 section .text16
@@ -127,6 +140,36 @@ enable_a20_fast:;A20 balid func
     or  al, 0x02
     out 0x92,al
     ret
+
+get_mem_map:
+    mov ebx, 0
+    mov ax, ds
+    mov es, ax
+.get_entry_loop:
+    mov word[mem_map_array_size], bx
+
+    mov ax, bx
+    mov dx, ax
+    shl ax, 4
+    shl dx, 3
+    add ax, dx
+    add ax, mem_map
+    mov di, ax
+
+    mov eax, 0xE820
+    mov edx, 0x534D4150  ;"SMAP"
+    mov ecx, 24
+
+    int 0x15
+
+    jc .error_mem_map
+    cmp bx, 0
+    jne .get_entry_loop
+    ret
+.error_mem_map:
+    hlt
+    jmp .error_mem_map
+
 
 check_LFB:
     xor ax, ax
@@ -274,10 +317,27 @@ setup_protect_mode:
 
 ;------------------------------------------
 section .data32
+gdt64bit_start:
+    dq 0x0000000000000000
+    
+    dq 0x00209A0000000000
+    
+    dq 0x0000920000000000
+
+gdt64bit_end:
+gdt64bit_descriptor:
+    dw gdt64bit_end - gdt64bit_start - 1
+    dd gdt64bit_start
+
 kernel_data:
-    dd ((Kernel_SECTOR_SEGMENT * 16) + Kernel_SECTOR_OFFSET)
+    dq ((Kernel_SECTOR_SEGMENT * 16) + Kernel_SECTOR_OFFSET)
+
+page_data_memory:
+    db 0
+
 idt_32bit:
     times 256 * 8 db 0
+
 idt_ptr_32bit:
     dw 256 * 8 - 1
     dd idt_32bit
@@ -291,22 +351,39 @@ PIC2_IRQ_mask_data:
 section .text32
 start_32bit:
     extern C_loader_main
+    cli
     mov ax, 0x10
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
     mov ss, ax
+
+    xor eax, eax
+    xor ebx, ebx
+    xor ecx, ecx
+    xor edx, edx
+    xor esi, esi
+    xor edi, edi
+    xor ebp, ebp
+
     mov esp, 0x9fc00
     mov ebp, esp
     call set_idt_32bit
     call set_irq_32bit
+    push page_data_memory
+    push ELF_datas
     push VBE_datas
     push kernel_data
     call C_loader_main
-    sti
+    ;sti
     add esp, 4
-    add esp, 24
+    add esp, 16
+    mov eax, [0x500]
+    mov edx, page_data_memory
+    mov eax, edx
+    ;jmp .hang
+    jmp setup_long_mode
 
     jmp $
 
@@ -314,6 +391,39 @@ start_32bit:
     hlt
     jmp .hang
 
+setup_long_mode:
+    cli
+    call .set_32bit_GDT
+    call .paging
+    jmp 0x08:start_64bit
+
+.set_32bit_GDT:
+    lgdt[gdt64bit_descriptor]
+    ret
+
+.paging:
+    mov eax, cr4
+    or eax, 1 << 5
+    mov cr4, eax
+
+    mov ecx, 0xC0000080
+    rdmsr
+    or eax, 1 << 8
+    wrmsr
+
+    mov eax, dword[page_data_memory]
+    mov cr3, eax
+    ;jmp .hang
+
+    mov eax, cr0
+    or eax, 1 << 31
+    mov cr0, eax
+
+    ret
+
+.hang:
+    hlt
+    jmp .hang
 set_irq_32bit:
     %define PIC1 0x20
     %define PIC2 0xA0
@@ -383,10 +493,13 @@ isr6_32bit:
 
 global isr8_32bit
 isr8_32bit:
+    extern err_screen
     ;push dword 0x08
     hlt
     cli
     push VBE_datas
+    jmp err_screen
+    add esp, 4
     jmp isr8_32bit
     jmp isr_common
 
@@ -449,5 +562,57 @@ isr_common:
     iret
 
 .hang:
+    ;hlt
+    jmp .hang
+
+[Bits 64]
+section .data64
+boot_data:
+    dd bios_type
+    dd VBE_datas
+    dd mem_map_struct
+
+section .text64
+start_64bit:
+    ;jmp $
+    cli
+    xor ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    mov ss, ax
+
+    xor rax, rax
+    xor rbx, rbx
+    xor rcx, rcx
+    xor rdx, rdx
+    xor rsi, rsi
+    xor rdi, rdi
+    xor rbp, rbp
+    xor r8,  r8
+    xor r9,  r9
+    xor r10, r10
+    xor r11, r11
+    xor r12, r12
+    xor r13, r13
+    xor r14, r14
+    xor r15, r15
+
+    mov rsp, 0x7fff
+    mov rbx, rax
+
+    push boot_data
+    mov rax, qword[kernel_data]
+    cmp qword[ELF_datas], 0
+    je .hang
+    add rax, qword[ELF_datas]
+    jmp rax
+
+.hang:
     hlt
     jmp .hang
+
+
+

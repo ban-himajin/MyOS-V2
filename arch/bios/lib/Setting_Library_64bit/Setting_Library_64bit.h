@@ -25,16 +25,15 @@
 #define XD 0x1000000000000
 
 #include "../std/Simple_Dynamic_Memory/Simple_Dynamic_Memory.h"
-
 typedef struct{
     unsigned short page_flag : 12;
-    unsigned long long map_mem;
+    unsigned long long real_mem;
     unsigned short index_num : 9;
 }PT;
 
 typedef struct{
     unsigned short page_flag : 12;
-    unsigned long long map_mem;
+    unsigned long long real_mem;
     unsigned short index_num : 9;
     unsigned short PT_size : 9;
     PT* PT_data;
@@ -42,7 +41,7 @@ typedef struct{
 
 typedef struct{
     unsigned short page_flag : 12;
-    unsigned long long map_mem;
+    unsigned long long real_mem;
     unsigned short index_num : 9;
     unsigned short PD_size : 9;
     PD* PD_data;
@@ -50,9 +49,9 @@ typedef struct{
 
 typedef struct{
     unsigned short page_flag : 12;
-    unsigned long long map_mem : 52;
+    unsigned long long real_mem : 52;
     unsigned short index_num : 9;
-    unsigned short PDPT_size;
+    unsigned short PDPT_size : 9;
     PDPT* PDPT_data;
 }PML4;
 
@@ -61,19 +60,20 @@ typedef struct{
     PML4* PML4_data;
 }Page_Table;
 
-void* page_table_data(const unsigned short PML4_size, const unsigned short PDPT_size, const unsigned short PD_size, const unsigned short PT_size){
+Page_Table* page_table_data(const unsigned short PML4_size, const unsigned short PDPT_size, const unsigned short PD_size, const unsigned short PT_size){//page_data_struct_make
+    if(PML4_size > 512 || PDPT_size > 512 || PD_size > 512 || PT_size > 512) return 1;
     Page_Table* page_data = SDMemory(sizeof(Page_Table));
     page_data->PML4_data = SDMemory(sizeof(PML4) * PML4_size);
     page_data->PML4_size = PML4_size;
     for(int i = 0; i < PML4_size; i++){
         page_data->PML4_data[i].PDPT_data = SDMemory(sizeof(PDPT) * PDPT_size);
-        page_data->PML4_data->PDPT_size = PDPT_size;
+        page_data->PML4_data[i].PDPT_size = PDPT_size;
         for(int j = 0; j < PDPT_size; j++){
             page_data->PML4_data[i].PDPT_data[j].PD_data = SDMemory(sizeof(PD) * PD_size);
-            page_data->PML4_data->PDPT_data->PD_size = PD_size;
+            page_data->PML4_data[i].PDPT_data[j].PD_size = PD_size;
             for(int k = 0; k < PT_size; k++){
                 page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_data = SDMemory(sizeof(PT) * PT_size);
-                page_data->PML4_data->PDPT_data->PD_data->PT_size = PT_size;
+                page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_size = PT_size;
             }
         }
     }
@@ -82,7 +82,7 @@ void* page_table_data(const unsigned short PML4_size, const unsigned short PDPT_
 
 int PML4_set_map_mem(PML4* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
     if(mems % (unsigned long long)(512*(unsigned long long)(512*GBYTE)) == 0){
-        pages->map_mem = mems;
+        pages->real_mem = mems;
         pages->page_flag = flag;
         pages->index_num = index;
         return 0;
@@ -91,8 +91,8 @@ int PML4_set_map_mem(PML4* pages, const unsigned int mems, const unsigned short 
 }
 
 int PDPT_set_map_mem(PDPT* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
-    if(mems % (unsigned long long)(512*GBYTE) == 0){
-        pages->map_mem = mems;
+    if(mems % (unsigned long long)(1*GBYTE) == 0){
+        pages->real_mem = mems;
         pages->page_flag = flag;
         pages->index_num = index;
         return 0;
@@ -102,7 +102,7 @@ int PDPT_set_map_mem(PDPT* pages, const unsigned int mems, const unsigned short 
 
 int PD_set_map_mem(PD* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
     if(mems % (unsigned long long)(512*(unsigned long long)(2*MBYTE)) == 0){
-        pages->map_mem = mems;
+        pages->real_mem = mems;
         pages->page_flag = flag;
         pages->index_num = index;
         return 0;
@@ -111,8 +111,8 @@ int PD_set_map_mem(PD* pages, const unsigned int mems, const unsigned short flag
 }
 
 int PT_set_map_mem(PT* pages, const unsigned int mems, const unsigned short flag, const unsigned short index){
-    if(mems % (unsigned long long)(512*(unsigned long long)(4*KBYTE)) == 0){
-        pages->map_mem = mems;
+    if(mems % (unsigned long long)(unsigned long long)(4*KBYTE) == 0){
+        pages->real_mem = mems;
         pages->page_flag = flag;
         pages->index_num = index;
         return 0;
@@ -120,44 +120,47 @@ int PT_set_map_mem(PT* pages, const unsigned int mems, const unsigned short flag
     return 1;
 }
 
-unsigned long long* make_page_data(const Page_Table* page_data){
-    unsigned int* PML4_start = align32(4 * KBYTE);
+unsigned long long* make_page_data(const Page_Table* page_data){//page_data_makes
+    align32(4 * KBYTE);
     if(page_data->PML4_size == 0) return 0;
     unsigned long long* page_table = SDMemory(sizeof(unsigned long long) * 512);
     unsigned long long* PML4 = page_table;
-    unsigned long long* PDPT;
-    unsigned long long* PD;
-    unsigned long long* PT;
+    //write_fill_rect(VBE, 100, 300, 100, 100, PML4);
+    unsigned long long* PDPT = 0;
+    unsigned long long* PD = 0;
+    unsigned long long* PT = 0;
     for(int i = 0;i < page_data->PML4_size;i++){//PML4エントリチェック PML4のサイズが0ならループに入れない
         if(page_data->PML4_data[i].PDPT_size == 0){
-            PML4[page_data->PML4_data[i].index_num] = ((unsigned long long)page_data->PML4_data[i].map_mem << 12) | page_data->PML4_data[i].page_flag;
+            PML4[page_data->PML4_data[i].index_num] = ((unsigned long long)page_data->PML4_data[i].real_mem & 0x0000fffffffff000) | page_data->PML4_data[i].page_flag;
             continue;
         }
+        align32(4 * KBYTE);
         PDPT = (unsigned long long*)SDMemory(sizeof(unsigned long long) * 512);
-        PML4[page_data->PML4_data[i].index_num] = ((unsigned long long)PDPT << 12) | page_data->PML4_data[i].page_flag;
-
+        PML4[page_data->PML4_data[i].index_num] = ((unsigned long long)PDPT & 0x0000fffffffff000) | page_data->PML4_data[i].page_flag;
+        
         for(int j = 0;j < page_data->PML4_data[i].PDPT_size;j++){//PDPTエントリチェック
             if(page_data->PML4_data[i].PDPT_data[j].PD_size == 0){
-                PDPT[page_data->PML4_data[i].PDPT_data[j].index_num] = ((unsigned long long)page_data->PML4_data[i].PDPT_data[j].map_mem << 12) | page_data->PML4_data[i].PDPT_data[j].page_flag;
+                PDPT[page_data->PML4_data[i].PDPT_data[j].index_num] = ((unsigned long long)page_data->PML4_data[i].PDPT_data[j].real_mem & 0x0000fffffffff000) | page_data->PML4_data[i].PDPT_data[j].page_flag;
                 continue;
             }
+            align32(4 * KBYTE);
             PD = (unsigned long long*)SDMemory(sizeof(unsigned long long) * 512);
-            PDPT[page_data->PML4_data[i].PDPT_data[j].index_num] = ((unsigned long long)PD << 12) | page_data->PML4_data[i].PDPT_data[j].page_flag;
+            PDPT[page_data->PML4_data[i].PDPT_data[j].index_num] = ((unsigned long long)PD & 0x0000fffffffff000) | page_data->PML4_data[i].PDPT_data[j].page_flag;
             
             for(int k = 0;k < page_data->PML4_data[i].PDPT_data[j].PD_size;k++){//PDエントリチェック
                 if(page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_size == 0){
-                    PD[page_data->PML4_data[i].PDPT_data[j].PD_data[k].index_num] = ((unsigned long long)page_data->PML4_data[i].PDPT_data[j].PD_data[k].map_mem << 12) | page_data->PML4_data[i].PDPT_data[j].PD_data[k].page_flag;
+                    PD[page_data->PML4_data[i].PDPT_data[j].PD_data[k].index_num] = ((unsigned long long)page_data->PML4_data[i].PDPT_data[j].PD_data[k].real_mem & 0x0000fffffffff000) | page_data->PML4_data[i].PDPT_data[j].PD_data[k].page_flag;
                     continue;
                 }
+                align32(4 * KBYTE);
                 PT = (unsigned long long*)SDMemory(sizeof(unsigned long long) * 512);
-                PD[page_data->PML4_data[i].PDPT_data[j].PD_data[k].index_num] = ((unsigned long long)PT << 12) | page_data->PML4_data[i].PDPT_data[j].PD_data[k].page_flag;
-
+                PD[page_data->PML4_data[i].PDPT_data[j].PD_data[k].index_num] = ((unsigned long long)PT & 0x0000fffffffff000) | page_data->PML4_data[i].PDPT_data[j].PD_data[k].page_flag;
                 for(int n = 0;n <  page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_size;n++){
-                    PT[page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_data[n].index_num] = ((unsigned long long)page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_data[n].map_mem << 12) | page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_data[n].page_flag;
+                    PT[page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_data[n].index_num] = ((unsigned long long)page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_data[n].real_mem & 0x0000fffffffff000) | page_data->PML4_data[i].PDPT_data[j].PD_data[k].PT_data[n].page_flag;
                 }
             }
         }
-
+        //while(1);
     }
     return page_table;
 }
